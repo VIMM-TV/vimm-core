@@ -1,16 +1,82 @@
 # VIMM Core
 
+> ⚠️ **IMPORTANT NOTICE**: This repository is currently under active development and is not ready for production use. The code is being developed in public for transparency as part of DHF proposal #320. Many components are incomplete or not fully implemented. Attempting to run the server in its current state will not work.
+>
+> Follow our progress:
+> - [DHF Proposal #320](https://peakd.com/proposals/320)
+> - [Development Updates](https://github.com/VIMM-TV/vimm-core/discussions)
+
 VIMM Core is an advanced streaming server that enables live streaming through multiple protocols with integrated Hive blockchain authentication, metadata management, and configurable transcoding capabilities. It is designed to be fully compatible with other VIMM ecosystem components.
 
-## VIMM Ecosystem
+## Development Status
 
-VIMM Core is part of a larger ecosystem of components that work together to provide a complete streaming solution:
+This repository represents ongoing work to create an open-source streaming framework for the Hive blockchain. The code is being developed iteratively and in public to maintain transparency with the community. Current status:
 
-- **VIMM Core** (this repository) - Core streaming server with multi-protocol support and transcoding capabilities
-- **VIMM Chat** - Dedicated chat server and implementation for real-time stream interaction
-- **VIMM Frontend** - Reference frontend application showcasing core streaming features, chat integration, and Hive social features
+- ✅ Core architecture design
+- ✅ Basic component structure
+- 🚧 Protocol implementations (In Progress)
+- 🚧 Transcoding system (In Progress)
+- ⏳ Hive integration (Planned)
+- ⏳ Testing framework (Planned)
 
-## Planned Features
+## Architecture Overview
+
+VIMM Core follows a modular, event-driven architecture with clear separation of concerns:
+
+```
+src/
+├── core/               # Core server components
+│   └── StreamManager   # Central stream management
+├── protocols/          # Streaming protocol implementations
+│   ├── ProtocolManager
+│   ├── WebRTCHandler
+│   ├── HLSHandler
+│   └── RTMPHandler
+├── transcoding/        # Transcoding management
+│   └── TranscodingManager
+├── auth/              # Authentication and authorization
+│   ├── AuthManager
+│   └── HiveAuthenticator
+├── metadata/          # Stream metadata management
+│   ├── MetadataManager
+│   └── HiveClient
+├── types/             # TypeScript type definitions
+└── Server.ts          # Main server class
+```
+
+### Core Components
+
+#### StreamManager
+- Central component managing active streams
+- Coordinates between other system components
+- Handles stream lifecycle events
+- Validates stream keys and permissions
+
+#### ProtocolManager
+- Manages multiple streaming protocols
+- Supports WebRTC, HLS, and RTMP
+- Handles protocol-specific initialization and shutdown
+- Coordinates stream routing between protocols
+
+#### TranscodingManager
+- Manages stream transcoding processes
+- Supports multiple quality profiles
+- Handles hardware acceleration (NVIDIA GPU)
+- Optimizes resource usage based on server load
+
+#### AuthManager
+- Manages Hive blockchain authentication
+- Handles stream key generation and validation
+- Provides role-based access control
+- Integrates with Hive's signature verification
+
+#### MetadataManager
+- Manages stream metadata storage and retrieval
+- Integrates with Hive blockchain for persistent storage
+- Handles real-time metadata updates
+- Provides synchronization with Hive
+
+## Features
 
 ### Streaming Protocols
 - **WebRTC**
@@ -21,6 +87,7 @@ VIMM Core is part of a larger ecosystem of components that work together to prov
 - **HLS (HTTP Live Streaming)**
   - Broad device compatibility
   - Adaptive quality streaming
+  - VOD support
   
 - **RTMP**
   - Traditional streaming ingest
@@ -28,70 +95,96 @@ VIMM Core is part of a larger ecosystem of components that work together to prov
   - Low-latency configuration options
 
 ### Transcoding
-- **Quality Profiles**
-  - Configurable output resolutions
-  - Multiple bitrate support
-  - Adaptive CPU/GPU utilization
-  
-- **Hardware Support**
-  - CPU transcoding
-  - NVIDIA GPU acceleration (NVENC)
-  - Optional transcoding configuration based on available hardware
-  
-- **Performance**
-  - Load balancing for multiple transcoding instances
-  - Resource usage monitoring
-  - Quality vs performance optimization options
+- Multiple quality profiles
+- Hardware acceleration support
+- Adaptive bitrate streaming
+- Resource usage optimization
 
-### Authentication & Authorization
-- Hive blockchain authentication
+### Authentication
+- Hive blockchain integration
 - Stream key management
-- Permission-based access control
-- Role-based authorization system
+- Role-based permissions
+- Secure token generation
 
 ### Metadata Management
-- Stream metadata storage and retrieval
-- Hive blockchain integration for persistent storage
+- Blockchain-based persistence
 - Real-time updates
-- Customizable metadata schemas
+- Custom metadata schemas
+- Automatic synchronization
 
-### Integration Points
-- **Chat Integration**
-  - WebSocket endpoints for VIMM Chat server communication
-  - Chat authentication hooks
-  - Stream-specific chat room management
-  
-- **Frontend Integration**
-  - RESTful API for stream management
-  - WebSocket endpoints for real-time updates
-  - Hive social feature hooks (comments, votes)
+## Getting Started
 
-## Architecture
+### Prerequisites
+- Node.js 18.x or higher
+- TypeScript 5.x
+- NVIDIA drivers (optional, for GPU transcoding)
 
-```
-src/
-├── protocols/          # Streaming protocol implementations
-│   ├── webrtc/
-│   ├── hls/
-│   └── rtmp/
-├── transcoding/        # Transcoding management
-│   ├── profiles/
-│   ├── hardware/
-│   └── monitoring/
-├── auth/              # Authentication and authorization
-│   ├── hive/
-│   └── streamKeys/
-├── metadata/          # Stream metadata management
-├── integration/       # Integration points for other VIMM components
-│   ├── chat/
-│   └── frontend/
-├── utils/             # Utility functions
-└── config/            # Configuration management
+### Installation
+```bash
+# Clone the repository
+git clone https://github.com/VIMM-TV/vimm-core.git
+
+# Install dependencies
+cd vimm-core
+npm install
 ```
 
-## Development Status
+### Configuration
+Create a `.env` file in the root directory:
+```env
+PORT=3000
+NODE_ENV=development
+HIVE_NODE=https://api.hive.blog
+GPU_TRANSCODING=true
+```
 
-This project is currently in early development. We are actively working on the core streaming functionality, transcoding capabilities, and Hive blockchain integration. The server is being designed with integration points for the VIMM Chat server and VIMM Frontend reference implementation.
+### Running the Server
+```bash
+# Development mode
+npm run dev
+
+# Production mode
+npm run build
+npm start
+```
+
+## Development
+
+### Building
+```bash
+# Build TypeScript files
+npm run build
+
+# Run tests
+npm test
+
+# Lint code
+npm run lint
+```
+
+### Adding a New Protocol
+1. Create a new handler in `src/protocols/`
+2. Implement the protocol interface
+3. Register the handler in `ProtocolManager`
+
+### Custom Transcoding Profiles
+Create a profile configuration in `src/transcoding/profiles/`:
+```typescript
+{
+  resolution: "1920x1080",
+  bitrate: 6000000,
+  fps: 60,
+  hardware: "nvenc"
+}
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## Related Repositories
 - [VIMM Chat](https://github.com/VIMM-TV/vimm-chat)
@@ -104,6 +197,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 - [GitHub Issues](https://github.com/VIMM-TV/vimm-core/issues)
+- [Discord Community](https://discord.gg/vimm)
 
 ---
 
