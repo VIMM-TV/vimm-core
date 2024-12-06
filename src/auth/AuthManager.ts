@@ -13,8 +13,8 @@ export class AuthManager {
     return this.streamKeys.has(key);
   }
 
-  async authenticateHiveUser(username: string, signature: string): Promise<boolean> {
-    return this.hiveAuth.verify(username, signature);
+  async authenticateHiveUser(username: string, signature: string, message: string): Promise<boolean> {
+    return this.hiveAuth.verify(username, signature, message);
   }
 
   async generateStreamKey(username: string): Promise<string> {

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VIMM Auth Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>VIMM Auth Test</h1>
+    <div>
+        <button onclick="testAuth()">Test Authentication</button>
+    </div>
+    <pre id="log" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></pre>
+
+    <script>
+        function log(message) {
+            const logElement = document.getElementById('log');
+            logElement.textContent += message + '\n';
+        }
+
+        async function testAuth() {
+            try {
+                const username = 'chiren'; // Replace with your username
+                const message = "vimm-auth";
+
+                log(`Starting auth test for user: ${username}`);
+                log(`Message to sign: ${message}`);
+
+                // Request signature from Keychain
+                if (typeof hive_keychain === 'undefined') {
+                    throw new Error('Hive Keychain is not installed');
+                }
+
+                log('Requesting signature from Hive Keychain...');
+                
+                hive_keychain.requestSignBuffer(
+                    username,
+                    message,
+                    'Posting',
+                    async response => {
+                        try {
+                            if (!response.success) {
+                                throw new Error(response.message);
+                            }
+
+                            const signature = response.result;
+                            log(`Signature received: ${signature}`);
+
+                            // Send to server
+                            log('Sending request to server...');
+                            const serverResponse = await axios.post('http://localhost:3000/api/stream-key', {
+                                username,
+                                signature,
+                                message
+                            });
+
+                            log('Server response:');
+                            log(JSON.stringify(serverResponse.data, null, 2));
+                        } catch (error) {
+                            log('Error:');
+                            log(error.response?.data?.error || error.message);
+                            log('Full error details:');
+                            log(JSON.stringify(error.response?.data || error, null, 2));
+                        }
+                    }
+                );
+            } catch (error) {
+                log('Error:');
+                log(error.message);
+            }
+        }
+    </script>
+</body>
+</html>

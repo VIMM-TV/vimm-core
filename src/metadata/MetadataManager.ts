@@ -6,7 +6,7 @@ export class MetadataManager {
   private metadata: Map<string, StreamMetadata>;
 
   constructor() {
-    this.hiveClient = new HiveClient();
+    this.hiveClient = new HiveClient(process.env.HIVE_POSTING_KEY || '');
     this.metadata = new Map();
   }
 
