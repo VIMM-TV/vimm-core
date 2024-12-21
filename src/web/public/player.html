@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vimm Stream Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        #video-container {
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        #videoPlayer {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="video-container">
+        <video id="videoPlayer" controls></video>
+    </div>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const streamKey = urlParams.get('key');
+        
+        if (streamKey) {
+            const video = document.getElementById('videoPlayer');
+            const streamUrl = `/live/${streamKey}/index.m3u8`;
+            
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(streamUrl);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    video.play();
+                });
+            }
+            // HLS.js is not supported on platforms that do not have Media Source Extensions (MSE) enabled.
+            // When the browser has built-in HLS support (Safari, Chrome for Android, etc), use it.
+            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = streamUrl;
+                video.addEventListener('loadedmetadata', function() {
+                    video.play();
+                });
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "vimm-core",
+  "version": "1.0.0",
+  "description": "Streaming server for vimm framework",
+  "main": "src/server/index.js",
+  "scripts": {
+    "start": "node src/server/index.js",
+    "dev": "nodemon src/server/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "chirenonhive",
+  "license": "ISC",
+  "dependencies": {
+    "crypto-js": "^4.2.0",
+    "express": "^4.18.2",
+    "node-media-server": "^2.7.4",
+    "sequelize": "^6.37.5",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

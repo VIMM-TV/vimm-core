@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vimm Core - Stream Key Generator</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Vimm Stream Key Generator</h1>
+        <div class="key-generator">
+            <div class="user-info">
+                <p>Log in as: <input type="text" id="username" name="username" placeholder="username"></input></p>
+            </div>
+            <div class="actions">
+                <button id="generateKey" class="button" disabled>Checking for Hive Keychain...</button>
+            </div>
+            <div class="stream-key-display" style="display: none;">
+                <h3>Your Stream Key</h3>
+                <div class="key-container">
+                    <input type="text" id="streamKey" readonly>
+                    <button id="copyKey" class="button">Copy</button>
+                </div>
+                <p class="warning">Keep this key secure! Don't share it with anyone.</p>
+            </div>
+        </div>
+    </div>
+    <!-- Load Hive Keychain script -->
+    <script src="https://cdn.jsdelivr.net/npm/hive-keychain@1.1.16/dist/hive-keychain.min.js"></script>
+    <script src="/js/main.js"></script>
+</body>
+</html>
