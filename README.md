@@ -20,7 +20,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Powered by the Hive blockchain. Built by VIMM.## Development Status
+Powered by the Hive blockchain. Built by VIMM.
+
+## Development Status
 
 This project is currently in early development. We are actively working on the core streaming functionality and integration with other VIMM ecosystem components.
 
