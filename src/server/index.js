@@ -37,16 +37,46 @@ initializeDatabase().then(() => {
 
     // Set up Node-Media-Server authentication
     nms.on('prePublish', async (id, StreamPath, args) => {
-        console.log('[NodeEvent on prePublish]', `id=${id} StreamPath=${StreamPath} args=${JSON.stringify(args)}`);
+        console.log('[NodeEvent on prePublish]', {
+            id,
+            StreamPath,
+            args
+        });
+
+        // Extract stream key from StreamPath
+        // StreamPath format: '/live/stream-key'
+        const streamKey = StreamPath.split('/')[2];
         
-        const streamKey = args.key;
+        console.log('[Stream Key Debug]', {
+            fullPath: StreamPath,
+            extractedKey: streamKey,
+            argsKey: args.key
+        });
         
+        if (!streamKey) {
+            console.error('[Authentication Failed] No stream key provided');
+            const session = nms.getSession(id);
+            session.reject();
+            return;
+        }
+
         try {
             const isValid = await validateStreamKey(streamKey);
             if (!isValid) {
                 console.log('[Authentication Failed]', `Invalid stream key: ${streamKey}`);
                 const session = nms.getSession(id);
-                session.reject();
+                session.reject({
+                    code: 'NetConnection.Connect.Rejected',
+                    description: 'Invalid stream key'
+                });
+
+                // Explicitly end the connection
+                if (session.pushStream) {
+                    session.pushStream.stop();
+                }
+                
+                // Close the connection
+                session.stop();
             } else {
                 console.log('[Authentication Success]', `Valid stream key: ${streamKey}`);
             }
@@ -59,11 +89,11 @@ initializeDatabase().then(() => {
 
     // Optional: Log when streams start/end
     nms.on('postPublish', (id, StreamPath, args) => {
-        console.log('[NodeEvent on postPublish]', `id=${id} StreamPath=${StreamPath} args=${JSON.stringify(args)}`);
+        console.log('[NodeEvent on postPublish]', `id=${id} StreamPath=${StreamPath}`);
     });
 
     nms.on('donePublish', (id, StreamPath, args) => {
-        console.log('[NodeEvent on donePublish]', `id=${id} StreamPath=${StreamPath} args=${JSON.stringify(args)}`);
+        console.log('[NodeEvent on donePublish]', `id=${id} StreamPath=${StreamPath}`);
     });
 
     // Run Node Media Server
@@ -79,5 +109,4 @@ initializeDatabase().then(() => {
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception:', err);
-    // Don't exit the process, just log the error
 });
