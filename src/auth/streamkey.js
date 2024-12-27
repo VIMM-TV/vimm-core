@@ -62,18 +62,24 @@ async function getStreamByHiveAccount(hiveAccount) {
 
 async function setStreamId(hiveAccount, streamId) {
     try {
+        console.log('Finding user with hiveAccount:', hiveAccount);
         const user = await StreamKey.findOne({
             where: {
                 hiveAccount: hiveAccount
             }
         });
+        if (!user) {
+            console.error('User not found');
+            return null;
+        }
+        console.log('User found:', user);
         await user.update({ streamID: streamId });
-        return user;
+        console.log('Stream ID updated successfully');
+        return true;
     } catch (error) {
         console.error('Error setting stream ID:', error);
         return null;
     }
-    
 }
 
 module.exports = {

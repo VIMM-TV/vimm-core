@@ -18,10 +18,10 @@ const StreamKey = sequelize.define('StreamKey', {
     unique: true,
     field: 'stream_key'
   },
-  StreamID: {
+  streamID: {
     type: DataTypes.STRING,
     allowNull: true,
-    unique: true,
+    unique: false,
     field: 'stream_id'
   },
   isActive: {

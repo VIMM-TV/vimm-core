@@ -19,26 +19,48 @@
     </div>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const username = urlParams.get('user'); // Changed from 'key' to 'user'
+        const username = urlParams.get('user');
+
+        function getStreamPath(hiveAccount) {
+            return fetch(`/api/stream/${hiveAccount}?type=hiveAccount`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch stream path');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    return `http://localhost:3000/live/${data.streamId}/index.m3u8`;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    throw error;
+                });
+        }
         
         if (username) {
             const video = document.getElementById('videoPlayer');
-            const streamUrl = `/live/${username}/index.m3u8`; // Using username instead of key
             
-            if (Hls.isSupported()) {
-                const hls = new Hls();
-                hls.loadSource(streamUrl);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.play();
+            // Wait for the stream URL to be resolved
+            getStreamPath(username)
+                .then(streamUrl => {
+                    if (Hls.isSupported()) {
+                        const hls = new Hls();
+                        hls.loadSource(streamUrl);
+                        hls.attachMedia(video);
+                        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                            video.play();
+                        });
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        video.src = streamUrl;
+                        video.addEventListener('loadedmetadata', function() {
+                            video.play();
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
                 });
-            }
-            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = streamUrl;
-                video.addEventListener('loadedmetadata', function() {
-                    video.play();
-                });
-            }
         }
     </script>
 </body>
