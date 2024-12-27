@@ -32,7 +32,22 @@ async function validateStreamKey(streamKey) {
     return false;
 }
 
+async function getUserByStreamKey(streamKey) {
+    try {
+        const user = await StreamKey.findOne({
+            where: {
+                streamKey: streamKey
+            }
+        });
+        return user;
+    } catch (error) {
+        console.error('Error finding user by stream key:', error);
+        return null;
+    }
+}
+
 module.exports = {
     generateStreamKey,
-    validateStreamKey
+    validateStreamKey,
+    getUserByStreamKey
 };

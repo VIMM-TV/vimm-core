@@ -19,11 +19,11 @@
     </div>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const streamKey = urlParams.get('key');
+        const username = urlParams.get('user'); // Changed from 'key' to 'user'
         
-        if (streamKey) {
+        if (username) {
             const video = document.getElementById('videoPlayer');
-            const streamUrl = `/live/${streamKey}/index.m3u8`;
+            const streamUrl = `/live/${username}/index.m3u8`; // Using username instead of key
             
             if (Hls.isSupported()) {
                 const hls = new Hls();
@@ -33,8 +33,6 @@
                     video.play();
                 });
             }
-            // HLS.js is not supported on platforms that do not have Media Source Extensions (MSE) enabled.
-            // When the browser has built-in HLS support (Safari, Chrome for Android, etc), use it.
             else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = streamUrl;
                 video.addEventListener('loadedmetadata', function() {

@@ -4,7 +4,7 @@ const NodeMediaServer = require('node-media-server');
 const sequelize = require('../db');
 const nmsConfig = require('./nms-config');
 const authRoutes = require('../api/routes/auth');
-const { validateStreamKey } = require('../auth/streamkey');
+const { validateStreamKey, getUserByStreamKey } = require('../auth/streamkey');
 
 const app = express();
 const nms = new NodeMediaServer(nmsConfig);
@@ -26,6 +26,7 @@ app.use(express.static(path.join(__dirname, '../web/public')));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/live', express.static(path.join(__dirname, '../../media/live')));
 
 // Initialize database and start servers
 initializeDatabase().then(() => {
@@ -35,6 +36,17 @@ initializeDatabase().then(() => {
         console.log(`HTTP Server running on port ${PORT}`);
     });
 
+    nms.on('preConnect', (id, args) => {
+        console.log('[NodeEvent on preConnect]', {
+            id,
+            args
+        });
+        
+        // Store the session ID in args so it's available for later
+        args.sessionId = id;
+        return;
+    });
+
     // Set up Node-Media-Server authentication
     nms.on('prePublish', async (id, StreamPath, args) => {
         console.log('[NodeEvent on prePublish]', {
@@ -42,24 +54,23 @@ initializeDatabase().then(() => {
             StreamPath,
             args
         });
-
+    
         // Extract stream key from StreamPath
-        // StreamPath format: '/live/stream-key'
         const streamKey = StreamPath.split('/')[2];
-        
-        console.log('[Stream Key Debug]', {
-            fullPath: StreamPath,
-            extractedKey: streamKey,
-            argsKey: args.key
-        });
+        const session = nms.getSession(id);
         
         if (!streamKey) {
             console.error('[Authentication Failed] No stream key provided');
-            const session = nms.getSession(id);
             session.reject();
             return;
         }
-
+        
+        const newStreamPath = `/live/${id}`;
+        session.publishStreamPath = newStreamPath;
+        if (session.pushStream) {
+            session.pushStream.streamPath = newStreamPath;
+        }
+    
         try {
             const isValid = await validateStreamKey(streamKey);
             if (!isValid) {
@@ -69,13 +80,10 @@ initializeDatabase().then(() => {
                     code: 'NetConnection.Connect.Rejected',
                     description: 'Invalid stream key'
                 });
-
-                // Explicitly end the connection
+    
                 if (session.pushStream) {
                     session.pushStream.stop();
                 }
-                
-                // Close the connection
                 session.stop();
             } else {
                 console.log('[Authentication Success]', `Valid stream key: ${streamKey}`);

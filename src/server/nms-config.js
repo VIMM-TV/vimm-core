@@ -20,7 +20,9 @@ const config = {
     },
     trans: {
         ffmpeg: '/usr/bin/ffmpeg',
-        tasks: [getTranscodingConfig()]
+        tasks: [{
+            ...getTranscodingConfig()
+        }]
     }
 };
 
