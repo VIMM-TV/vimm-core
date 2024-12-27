@@ -96,6 +96,15 @@ initializeDatabase().then(() => {
         console.log('[NodeEvent on donePublish]', `id=${id} StreamPath=${StreamPath}`);
     });
 
+    // Monitor HLS segment generation
+    nms.on('postTranscode', (id, StreamPath, args) => {
+        console.log('[Transcode]', `Stream ${StreamPath} transcoding started`);
+    });
+
+    nms.on('doneTranscode', (id, StreamPath, args) => {
+        console.log('[Transcode]', `Stream ${StreamPath} transcoding finished`);
+    });
+
     // Run Node Media Server
     try {
         nms.run();
