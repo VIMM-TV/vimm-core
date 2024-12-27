@@ -19,7 +19,6 @@ const config = {
         publish: true
     },
     trans: {
-        // FFmpeg binary path. Change it if yours is different.
         ffmpeg: '/usr/bin/ffmpeg',
         tasks: [getTranscodingConfig()]
     }
