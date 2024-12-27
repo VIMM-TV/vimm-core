@@ -4,7 +4,7 @@ const NodeMediaServer = require('node-media-server');
 const sequelize = require('../db');
 const nmsConfig = require('./nms-config');
 const authRoutes = require('../api/routes/auth');
-const { validateStreamKey, getUserByStreamKey } = require('../auth/streamkey');
+const { validateStreamKey, getUserByStreamKey, getStreamByHiveAccount, setStreamId } = require('../auth/streamkey');
 
 const app = express();
 const nms = new NodeMediaServer(nmsConfig);
@@ -27,6 +27,37 @@ app.use(express.static(path.join(__dirname, '../web/public')));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/live', express.static(path.join(__dirname, '../../media/live')));
+
+app.get('/api/stream/:identifier', async (req, res) => {
+    try {
+        const { identifier } = req.params;
+        const { type } = req.query; // 'hiveAccount' or 'streamKey'
+        
+        let streamId;
+        if (type === 'hiveAccount') {
+            // Logic to fetch stream ID by hiveAccount
+            streamId = await getStreamByHiveAccount(identifier);
+        } else if (type === 'streamKey') {
+            // Logic to fetch stream ID by streamKey
+            streamId = await getStreamIdByStreamKey(identifier);
+        } else {
+            return res.status(400).json({ error: 'Invalid identifier type' });
+        }
+        
+        if (!streamId) {
+            return res.status(404).json({ error: 'Stream not found' });
+        }
+        
+        // Return the RTMP stream path/ID
+        res.json({
+            streamId,
+            rtmpPath: `rtmp://localhost/live/${streamId}`
+        });
+    } catch (error) {
+        console.error('Error fetching stream:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 // Initialize database and start servers
 initializeDatabase().then(() => {
@@ -87,6 +118,11 @@ initializeDatabase().then(() => {
                 session.stop();
             } else {
                 console.log('[Authentication Success]', `Valid stream key: ${streamKey}`);
+                const user = await getUserByStreamKey(streamKey);
+                if (user) {
+                    await setStreamId(user.hiveAccount, id);
+                    console.log(`[Stream ID Set] Stream ID ${id} set for Hive account ${user.hiveAccount}`);
+                }
             }
         } catch (error) {
             console.error('[Authentication Error]', error);

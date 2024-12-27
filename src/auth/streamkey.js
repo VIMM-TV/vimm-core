@@ -46,8 +46,40 @@ async function getUserByStreamKey(streamKey) {
     }
 }
 
+async function getStreamByHiveAccount(hiveAccount) {
+    try {
+        const user = await StreamKey.findOne({
+            where: {
+                hiveAccount: hiveAccount
+            }
+        });
+        return user;
+    } catch (error) {
+        console.error('Error finding user by stream key:', error);
+        return null;
+    }
+}
+
+async function setStreamId(hiveAccount, streamId) {
+    try {
+        const user = await StreamKey.findOne({
+            where: {
+                hiveAccount: hiveAccount
+            }
+        });
+        await user.update({ streamID: streamId });
+        return user;
+    } catch (error) {
+        console.error('Error setting stream ID:', error);
+        return null;
+    }
+    
+}
+
 module.exports = {
     generateStreamKey,
     validateStreamKey,
-    getUserByStreamKey
+    getUserByStreamKey,
+    getStreamByHiveAccount,
+    setStreamId
 };

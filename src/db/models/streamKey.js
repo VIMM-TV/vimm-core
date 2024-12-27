@@ -18,6 +18,12 @@ const StreamKey = sequelize.define('StreamKey', {
     unique: true,
     field: 'stream_key'
   },
+  StreamID: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+    field: 'stream_id'
+  },
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
@@ -32,5 +38,9 @@ const StreamKey = sequelize.define('StreamKey', {
   timestamps: true, // This will add createdAt and updatedAt fields
   underscored: true // This will use snake_case for column names
 });
+
+StreamKey.prototype.setStreamId = async function(streamId) {
+  return this.update({ streamId });
+};
 
 module.exports = StreamKey;
