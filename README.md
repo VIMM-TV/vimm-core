@@ -34,6 +34,16 @@ This project is currently in early development. We are actively working on the c
 - Redis for caching
 - WebSocket for real-time communication
 
+## Dependencies
+```bash
+# For Ubuntu/Debian
+sudo apt update
+sudo apt install ffmpeg
+
+# For NVIDIA support, also install:
+sudo apt install nvidia-cuda-toolkit
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
