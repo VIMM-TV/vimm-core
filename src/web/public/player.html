@@ -419,7 +419,7 @@
                                 option.setAttribute('data-quality', index);
                                 
                                 // Format the quality label
-                                const height = level.height;
+                                const height = level.height > 0 ? `${level.height}p` : 'Source';
                                 const bitrate = Math.round(level.bitrate / 1000);
                                 option.textContent = `${height}p (${bitrate}kbps)`;
                                 
