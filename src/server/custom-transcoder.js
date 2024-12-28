@@ -120,6 +120,7 @@ class CustomTranscoder {
       // Add output options for each transcoded profile
       transcodedProfiles.forEach((profile, index) => {
           ffmpegArgs.push(
+              '-loglevel', 'error',
               '-map', `[v${index}]`,
               '-map', '0:a',
               '-c:v', profile.encoder,
