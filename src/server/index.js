@@ -118,7 +118,7 @@ initializeDatabase().then(() => {
                 //     description: 'Invalid stream key'
                 // });
 
-                session.sendStatusMessage(newStreamPath, 'error', 'NetStream.Publish.Unauthorized', 'Invalid stream key');
+                session.sendStatusMessage(session.publishStreamPath, 'error', 'NetStream.Publish.Unauthorized', 'Invalid stream key');
                 return;
     
                 // if (session.pushStream) {
