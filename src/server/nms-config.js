@@ -10,11 +10,11 @@ const config = {
     http: {
         port: 8000,
         allow_origin: '*',
-        mediaroot: './media',
+        mediaroot: './media', // This is where HLS files will be saved
     },
     auth: {
-        play: false,
-        publish: false
+        play: false, // Authentication is not need for playback of streams.
+        publish: false // We disable NMS' built-in authentication to use our custom solution instead.
     }
 };
 

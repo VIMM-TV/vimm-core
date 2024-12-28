@@ -13,6 +13,8 @@ const transcoder = new CustomTranscoder();
 const app = express();
 const nms = new NodeMediaServer(nmsConfig);
 
+const config = require('../../config/default');
+
 // Initialize database and create tables
 async function initializeDatabase() {
     try {
