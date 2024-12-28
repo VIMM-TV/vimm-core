@@ -117,6 +117,8 @@ initializeDatabase().then(() => {
                     code: 'NetConnection.Connect.Rejected',
                     description: 'Invalid stream key'
                 });
+
+                session.sendStatusMessage(id, 'error', 'NetStream.Publish.Unauthorized', 'Invalid stream key');
     
                 if (session.pushStream) {
                     session.pushStream.stop();
