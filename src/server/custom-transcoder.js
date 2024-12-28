@@ -28,7 +28,7 @@ class CustomTranscoder {
 
         profiles.forEach(profile => {
             const bandwidth = profile.bitrate * 1000;
-            masterContent += `#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth},RESOLUTION=${profile.resolution},NAME="${profile.name}"\n`;
+            masterContent += `#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth},RESOLUTION=${profile.name == 'source' ? 'source' : profile.resolution},NAME="${profile.name}"\n`;
             masterContent += `${profile.name}/index.m3u8\n\n`;
         });
 
