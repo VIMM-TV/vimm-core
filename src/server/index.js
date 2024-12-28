@@ -115,11 +115,7 @@ initializeDatabase().then(() => {
                 const session = nms.getSession(id);
 
                 session.sendStatusMessage(id, 'error', 'NetStream.Publish.Unauthorized', 'Invalid stream key');
-    
-                if (session.pushStream) {
-                    session.pushStream.stop();
-                }
-                session.stop();
+                session.reject();
             } else {
                 Logger.log('[Authentication Success]', `Valid stream key: ${streamKey}`);
                 const user = await getUserByStreamKey(streamKey);
