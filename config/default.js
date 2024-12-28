@@ -1,5 +1,5 @@
 const config = {
-    transcoding: true
+    transcoding: false
 };
 
 module.exports = config;
