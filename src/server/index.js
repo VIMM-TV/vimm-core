@@ -147,6 +147,7 @@ initializeDatabase().then(() => {
 
     nms.on('doneTranscode', (id, StreamPath, args) => {
         console.log('[Transcode]', `Stream ${StreamPath} transcoding finished`);
+        execSync(`rm -rf ./media/live/${id}`);
     });
 
     // Run Node Media Server

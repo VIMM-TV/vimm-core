@@ -72,7 +72,7 @@ async function setStreamId(hiveAccount, streamId) {
             console.error('User not found');
             return null;
         }
-        console.log('User found:', user);
+        //console.log('User found:', user);
         await user.update({ streamID: streamId });
         console.log('Stream ID updated successfully');
         return true;

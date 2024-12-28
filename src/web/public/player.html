@@ -3,23 +3,264 @@
 <head>
     <title>Vimm Stream Player</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        #video-container {
-            max-width: 800px;
-            margin: 20px auto;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            background-color: #0e0e10;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        #player-wrapper {
+            position: relative;
+            width: 100%;
+            background: #000;
+            transition: all 0.3s ease;
+        }
+
+        #video-container {
+            width: 100%;
+            max-width: 1600px;
+            margin: 0 auto;
+            position: relative;
+            aspect-ratio: 16/9;
+        }
+
         #videoPlayer {
             width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        .custom-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #video-container:hover .custom-controls {
+            opacity: 1;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            margin-bottom: 10px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #9147ff;
+            width: 0;
+            position: relative;
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .left-controls, .right-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .control-button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 1.2em;
+            opacity: 0.85;
+            transition: opacity 0.2s ease;
+        }
+
+        .control-button:hover {
+            opacity: 1;
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .volume-fill {
+            height: 100%;
+            background: white;
+            width: 100%;
+        }
+
+        .quality-menu {
+            position: absolute;
+            bottom: 40px;
+            right: 10px;
+            background: rgba(0,0,0,0.9);
+            border-radius: 4px;
+            padding: 8px;
+            display: none;
+        }
+
+        .quality-option {
+            padding: 5px 10px;
+            cursor: pointer;
+            color: #fff;
+            transition: color 0.2s ease;
+        }
+
+        .quality-option:hover {
+            color: #9147ff;
+        }
+
+        /* Theater mode styles */
+        .theater-mode {
+            max-width: 100% !important;
+            width: 100% !important;
+            margin: 0 !important;
+        }
+
+        .theater-mode #video-container {
+            max-width: 100% !important;
+            height: calc(100vh);
+        }
+
+        /* Time display */
+        .time-display {
+            color: white;
+            font-size: 0.9em;
+            margin: 0 10px;
+        }
+
+        /* Live indicator */
+        .live-indicator {
+            background: #ed4245;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        /* Buffer indicator */
+        .buffer-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid #9147ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div id="video-container">
-        <video id="videoPlayer" controls></video>
+    <div id="player-wrapper">
+        <div id="video-container">
+            <video id="videoPlayer"></video>
+            <div class="buffer-indicator">
+                <div class="spinner"></div>
+            </div>
+            <div class="custom-controls">
+                <div class="progress-bar" style="display: none;">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="controls-row">
+                    <div class="left-controls">
+                        <button class="control-button play-pause">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <div class="volume-container">
+                            <button class="control-button volume">
+                                <i class="fas fa-volume-up"></i>
+                            </button>
+                            <div class="volume-slider">
+                                <div class="volume-fill"></div>
+                            </div>
+                        </div>
+                        <span class="time-display">00:00:00</span>
+                        <span class="live-indicator">LIVE</span>
+                    </div>
+                    <div class="right-controls">
+                        <button class="control-button quality-settings">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <button class="control-button theater">
+                            <i class="fas fa-tv"></i>
+                        </button>
+                        <button class="control-button fullscreen">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="quality-menu">
+                    <div class="quality-option" data-quality="auto">Auto</div>
+                    <div class="quality-option" data-quality="1080p">1080p</div>
+                    <div class="quality-option" data-quality="720p">720p</div>
+                    <div class="quality-option" data-quality="480p">480p</div>
+                </div>
+            </div>
+        </div>
     </div>
+
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('user');
+
+        const video = document.getElementById('videoPlayer');
+        const playerWrapper = document.getElementById('player-wrapper');
+        const controls = document.querySelector('.custom-controls');
+        const playPauseBtn = document.querySelector('.play-pause');
+        const volumeBtn = document.querySelector('.volume');
+        const volumeSlider = document.querySelector('.volume-slider');
+        const volumeFill = document.querySelector('.volume-fill');
+        const progressBar = document.querySelector('.progress-bar');
+        const progressFill = document.querySelector('.progress-fill');
+        const timeDisplay = document.querySelector('.time-display');
+        const theaterBtn = document.querySelector('.theater');
+        const fullscreenBtn = document.querySelector('.fullscreen');
+        const qualityBtn = document.querySelector('.quality-settings');
+        const qualityMenu = document.querySelector('.quality-menu');
+        const bufferIndicator = document.querySelector('.buffer-indicator');
+
+        let isTheaterMode = false;
+        let hls = null;
 
         function getStreamPath(hiveAccount) {
             return fetch(`/api/stream/${hiveAccount}?type=hiveAccount`)
@@ -37,24 +278,148 @@
                     throw error;
                 });
         }
-        
-        if (username) {
-            const video = document.getElementById('videoPlayer');
+
+        // Play/Pause
+        playPauseBtn.addEventListener('click', () => {
+            if (video.paused) {
+                video.play();
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                video.pause();
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        });
+
+        // Volume control
+        volumeBtn.addEventListener('click', () => {
+            if (video.muted) {
+                video.muted = false;
+                volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+                volumeFill.style.width = '100%';
+            } else {
+                video.muted = true;
+                volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                volumeFill.style.width = '0%';
+            }
+        });
+
+        volumeSlider.addEventListener('click', (e) => {
+            const rect = volumeSlider.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            video.volume = pos;
+            volumeFill.style.width = (pos * 100) + '%';
+            updateVolumeIcon(pos);
+        });
+
+        function updateVolumeIcon(volume) {
+            if (volume === 0) {
+                volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+            } else if (volume < 0.5) {
+                volumeBtn.innerHTML = '<i class="fas fa-volume-down"></i>';
+            } else {
+                volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+            }
+        }
+
+        // Progress bar
+        video.addEventListener('timeupdate', () => {
+            const progress = (video.currentTime / video.duration) * 100;
+            progressFill.style.width = progress + '%';
             
-            // Wait for the stream URL to be resolved
+            // Update time display
+            const time = formatTime(video.currentTime);
+            timeDisplay.textContent = time;
+        });
+
+        progressBar.addEventListener('click', (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            video.currentTime = pos * video.duration;
+        });
+
+        // Theater mode
+        theaterBtn.addEventListener('click', () => {
+            isTheaterMode = !isTheaterMode;
+            playerWrapper.classList.toggle('theater-mode');
+        });
+
+        // Fullscreen
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                playerWrapper.requestFullscreen();
+                fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+            } else {
+                document.exitFullscreen();
+                fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+            }
+        });
+
+        // Quality settings
+        qualityBtn.addEventListener('click', () => {
+            qualityMenu.style.display = qualityMenu.style.display === 'none' ? 'block' : 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!qualityMenu.contains(e.target) && !qualityBtn.contains(e.target)) {
+                qualityMenu.style.display = 'none';
+            }
+        });
+
+        // Buffer indicator
+        video.addEventListener('waiting', () => {
+            bufferIndicator.style.display = 'block';
+        });
+
+        video.addEventListener('playing', () => {
+            bufferIndicator.style.display = 'none';
+        });
+
+        // Time formatter
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // Initialize player
+        if (username) {
             getStreamPath(username)
                 .then(streamUrl => {
                     if (Hls.isSupported()) {
-                        const hls = new Hls();
+                        hls = new Hls({
+                            debug: true, // Enable debugging
+                            liveSyncDurationCount: 3, // Adjust live sync duration
+                        });
                         hls.loadSource(streamUrl);
                         hls.attachMedia(video);
                         hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                            video.play();
+                            video.play()
+                                .then(() => {
+                                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                                })
+                                .catch(error => {
+                                    console.error('Autoplay failed:', error);
+                                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                                });
+                        });
+
+                        // Quality control
+                        hls.on(Hls.Events.LEVEL_SWITCHED, function(event, data) {
+                            const quality = hls.levels[data.level];
+                            console.log('Current quality:', quality.height + 'p');
                         });
                     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                         video.src = streamUrl;
                         video.addEventListener('loadedmetadata', function() {
-                            video.play();
+                            video.play()
+                                .then(() => {
+                                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                                })
+                                .catch(error => {
+                                    console.error('Autoplay failed:', error);
+                                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                                });
                         });
                     }
                 })
@@ -62,6 +427,23 @@
                     console.error('Error:', error);
                 });
         }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                playPauseBtn.click();
+            } else if (e.code === 'KeyF') {
+                e.preventDefault();
+                fullscreenBtn.click();
+            } else if (e.code === 'KeyM') {
+                e.preventDefault();
+                volumeBtn.click();
+            } else if (e.code === 'KeyT') {
+                e.preventDefault();
+                theaterBtn.click();
+            }
+        });
     </script>
 </body>
 </html>

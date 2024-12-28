@@ -2,13 +2,15 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 
 function checkNvidiaGPU() {
-    try {
-        // Check if nvidia-smi is available
-        execSync('nvidia-smi');
-        return true;
-    } catch (error) {
-        return false;
-    }
+  try {
+      // Check if nvidia-smi is available
+      execSync('nvidia-smi');
+      console.log('NVIDIA GPU detected');
+      return true;
+  } catch (error) {
+      console.error('NVIDIA GPU check failed:', error.message);
+      return false;
+  }
 }
 
 function getTranscodingConfig() {
@@ -16,7 +18,7 @@ function getTranscodingConfig() {
     const baseConfig = {
         app: 'live',
         hls: true,
-        hlsFlags: '[hls_time=2:hls_list_size=3:hls_flags=delete_segments]',
+        hlsFlags: '[hls_time=4:hls_list_size=5:hls_flags=delete_segments]',
         hlsKeep: false,
         handler: (id, streamPath, args) => {
           // Use the session ID for the HLS path
@@ -33,19 +35,16 @@ function getTranscodingConfig() {
             profiles: {
                 // High quality (source quality)
                 source: {
-                    codec: 'copy',
-                    ac: 'copy'
+                    vc: 'h264_nvenc',
+                    ac: 'aac'
                 },
                 // 720p transcoded stream using NVIDIA GPU
                 '720p': {
-                    codec: 'h264_nvenc',
+                    vc: 'h264_nvenc',
                     ac: 'aac',
-                    scale: '1280:720',
-                    fps: 30,
-                    bitrate: '2500k',
-                    profile: 'main',
-                    preset: 'p4',
-                    args: '-rc:v vbr_hq -rc-lookahead:v 32'
+                    '-vf': 'scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2',
+                    '-b:v': '2500k',
+                    '-b:a': '128k',
                 }
             }
         };
