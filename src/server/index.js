@@ -67,7 +67,7 @@ app.get('/api/stream/:identifier', async (req, res) => {
 initializeDatabase().then(() => {
     // Start HTTP server
     const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
         Logger.log(`HTTP Server running on port ${PORT}`);
     });
 
