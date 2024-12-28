@@ -147,14 +147,6 @@ class CustomTranscoder {
       });
       this.activeStreams.set(streamId, ffmpeg);
 
-        ffmpeg.stdout.on('data', (data) => {
-            console.log(`FFmpeg stdout: ${data}`);
-        });
-
-        ffmpeg.stderr.on('data', (data) => {
-            console.log(`FFmpeg stderr: ${data}`);
-        });
-
         ffmpeg.on('close', (code) => {
             console.log(`FFmpeg process exited with code ${code}`);
             this.activeStreams.delete(streamId);
