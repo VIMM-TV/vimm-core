@@ -113,18 +113,13 @@ initializeDatabase().then(() => {
             if (!isValid) {
                 Logger.log('[Authentication Failed]', `Invalid stream key: ${streamKey}`);
                 const session = nms.getSession(id);
-                // session.reject({
-                //     code: 'NetConnection.Connect.Rejected',
-                //     description: 'Invalid stream key'
-                // });
 
                 session.sendStatusMessage(id, 'error', 'NetStream.Publish.Unauthorized', 'Invalid stream key');
-                return;
     
-                // if (session.pushStream) {
-                //     session.pushStream.stop();
-                // }
-                // session.stop();
+                if (session.pushStream) {
+                    session.pushStream.stop();
+                }
+                session.stop();
             } else {
                 Logger.log('[Authentication Success]', `Valid stream key: ${streamKey}`);
                 const user = await getUserByStreamKey(streamKey);
