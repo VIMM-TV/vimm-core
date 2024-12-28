@@ -11,6 +11,7 @@ const config = {
         port: 8000,
         allow_origin: '*',
         mediaroot: './media', // This is where HLS files will be saved
+        api: true
     },
     auth: {
         play: false, // Authentication is not need for playback of streams.
