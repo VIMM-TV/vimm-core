@@ -387,10 +387,7 @@
             getStreamPath(username)
                 .then(streamUrl => {
                     if (Hls.isSupported()) {
-                        hls = new Hls({
-                            debug: true, // Enable debugging
-                            liveSyncDurationCount: 3, // Adjust live sync duration
-                        });
+                        hls = new Hls();
                         hls.loadSource(streamUrl);
                         hls.attachMedia(video);
                         hls.on(Hls.Events.MANIFEST_PARSED, function() {

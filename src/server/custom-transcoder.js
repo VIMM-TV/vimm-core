@@ -36,94 +36,105 @@ class CustomTranscoder {
     }
 
     startTranscoding(streamId, inputUrl) {
-        if (this.activeStreams.has(streamId)) {
-            console.log(`Stream ${streamId} is already being transcoded`);
-            return;
-        }
+      if (this.activeStreams.has(streamId)) {
+          console.log(`Stream ${streamId} is already being transcoded`);
+          return;
+      }
 
-        const hasGPU = this.checkNvidiaGPU();
-        const streamDir = path.join('./media/live', streamId);
+      const hasGPU = this.checkNvidiaGPU();
+      const streamDir = path.join('./media/live', streamId);
 
-        // Ensure base directory exists
-        if (!fs.existsSync(streamDir)) {
-            fs.mkdirSync(streamDir, { recursive: true });
-        }
+      // Ensure base directory exists
+      if (!fs.existsSync(streamDir)) {
+          fs.mkdirSync(streamDir, { recursive: true });
+      }
 
-        const profiles = [
-            {
-                name: 'source',
-                resolution: '1920x1080',
-                bitrate: 5000,
-                encoder: hasGPU ? 'h264_nvenc' : 'libx264'
-            },
-            {
-                name: '720p',
-                resolution: '1280x720',
-                bitrate: 2800,
-                encoder: hasGPU ? 'h264_nvenc' : 'libx264'
-            },
-            {
-                name: '480p',
-                resolution: '854x480',
-                bitrate: 1400,
-                encoder: hasGPU ? 'h264_nvenc' : 'libx264'
-            },
-            {
-                name: '360p',
-                resolution: '640x360',
-                bitrate: 800,
-                encoder: hasGPU ? 'h264_nvenc' : 'libx264'
-            }
-        ];
+      const profiles = [
+          {
+              name: 'source',
+              resolution: '1920x1080',
+              bitrate: 5000,
+              encoder: 'copy'  // Changed to copy for passthrough
+          },
+          {
+              name: '720p',
+              resolution: '1280x720',
+              bitrate: 2800,
+              encoder: hasGPU ? 'h264_nvenc' : 'libx264'
+          },
+          {
+              name: '360p',
+              resolution: '640x360',
+              bitrate: 800,
+              encoder: hasGPU ? 'h264_nvenc' : 'libx264'
+          }
+      ];
 
-        // Create directories for each profile
-        profiles.forEach(profile => {
-            const qualityDir = path.join(streamDir, profile.name);
-            if (!fs.existsSync(qualityDir)) {
-                fs.mkdirSync(qualityDir, { recursive: true });
-            }
-        });
+      // Create directories for each profile
+      profiles.forEach(profile => {
+          const qualityDir = path.join(streamDir, profile.name);
+          if (!fs.existsSync(qualityDir)) {
+              fs.mkdirSync(qualityDir, { recursive: true });
+          }
+      });
 
-        // Create master playlist
-        this.createMasterPlaylist(streamId, profiles);
+      // Create master playlist
+      this.createMasterPlaylist(streamId, profiles);
 
-        // Build FFmpeg command
-        const ffmpegArgs = [
-            '-i', inputUrl,
-            '-y', // Overwrite output files
-            '-filter_complex', this.buildFilterComplex(profiles)
-        ];
+      // Build FFmpeg command
+      const transcodedProfiles = profiles.filter(p => p.name !== 'source');
+      const ffmpegArgs = [
+          '-i', inputUrl,
+          '-fflags', '+genpts',
+          '-rtbufsize', '15M',
+          '-force_key_frames', 'expr:gte(t,n_forced*2)',
+          '-y' // Overwrite output files
+      ];
 
-        // Add output options for each profile
-        profiles.forEach((profile, index) => {
-            ffmpegArgs.push(
-                // Map video and audio from the filter complex
-                '-map', `[v${index}]`,
-                '-map', '0:a',
-                // Video codec settings
-                '-c:v', profile.encoder,
-                ...(hasGPU ? ['-preset', 'p4', '-tune', 'hq'] : ['-preset', 'veryfast']),
-                '-b:v', `${profile.bitrate}k`,
-                '-maxrate', `${profile.bitrate * 1.1}k`,
-                '-bufsize', `${profile.bitrate * 2}k`,
-                // Audio codec settings
-                '-c:a', 'aac',
-                '-b:a', '128k',
-                '-ar', '44100',
-                // HLS settings
-                '-f', 'hls',
-                '-hls_time', '2',
-                '-hls_list_size', '8',
-                '-hls_flags', 'delete_segments+independent_segments',
-                '-hls_segment_filename', path.join(streamDir, profile.name, 'segment_%d.ts'),
-                path.join(streamDir, profile.name, 'index.m3u8')
-            );
-        });
+      // Add source (passthrough) output first
+      ffmpegArgs.push(
+          // Source quality (passthrough)
+          '-c:v', 'copy',
+          '-c:a', 'copy',
+          '-f', 'hls',
+          '-hls_time', '2',
+          '-hls_list_size', '8',
+          '-hls_flags', 'delete_segments+independent_segments',
+          '-hls_segment_filename', path.join(streamDir, 'source', 'segment_%d.ts'),
+          path.join(streamDir, 'source', 'index.m3u8')
+      );
 
-        console.log('Starting FFmpeg with args:', ffmpegArgs.join(' '));
+      // Add filter complex for transcoded profiles
+      if (transcodedProfiles.length > 0) {
+          ffmpegArgs.push('-filter_complex', this.buildFilterComplex(profiles));
+      }
 
-        const ffmpeg = spawn(this.ffmpegPath, ffmpegArgs);
-        this.activeStreams.set(streamId, ffmpeg);
+      // Add output options for each transcoded profile
+      transcodedProfiles.forEach((profile, index) => {
+          ffmpegArgs.push(
+              '-map', `[v${index}]`,
+              '-map', '0:a',
+              '-c:v', profile.encoder,
+              ...(hasGPU ? ['-preset', 'p2', '-tune', 'hq'] : ['-preset', 'veryfast']),
+              '-b:v', `${profile.bitrate}k`,
+              '-maxrate', `${profile.bitrate * 1.1}k`,
+              '-bufsize', `${profile.bitrate * 2}k`,
+              '-c:a', 'aac',
+              '-b:a', '128k',
+              '-ar', '44100',
+              '-f', 'hls',
+              '-hls_time', '4',
+              '-hls_list_size', '15',
+              '-hls_flags', 'delete_segments+independent_segments+append_list',
+              '-hls_segment_filename', path.join(streamDir, profile.name, 'segment_%d.ts'),
+              path.join(streamDir, profile.name, 'index.m3u8')
+          );
+      });
+
+      console.log('Starting FFmpeg with args:', ffmpegArgs.join(' '));
+
+      const ffmpeg = spawn(this.ffmpegPath, ffmpegArgs);
+      this.activeStreams.set(streamId, ffmpeg);
 
         ffmpeg.stdout.on('data', (data) => {
             console.log(`FFmpeg stdout: ${data}`);
@@ -140,11 +151,9 @@ class CustomTranscoder {
     }
 
     buildFilterComplex(profiles) {
-        // Create a filter chain for each profile
-        const filters = profiles.map((profile, index) => {
-            if (profile.name === 'source') {
-                return `[0:v]split=${profiles.length}[v${index}]`;
-            }
+        // Only create filters for transcoded profiles (excluding source)
+        const transcodedProfiles = profiles.filter(p => p.name !== 'source');
+        const filters = transcodedProfiles.map((profile, index) => {
             const [width, height] = profile.resolution.split('x');
             return `[0:v]scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2[v${index}]`;
         });
