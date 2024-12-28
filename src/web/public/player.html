@@ -421,7 +421,7 @@
                                 // Format the quality label
                                 const height = level.height > 0 ? `${level.height}p` : 'Source';
                                 const bitrate = Math.round(level.bitrate / 1000);
-                                option.textContent = `${height}p (${bitrate}kbps)`;
+                                option.textContent = `${height} (${bitrate}kbps)`;
                                 
                                 option.addEventListener('click', () => {
                                     hls.currentLevel = index;
