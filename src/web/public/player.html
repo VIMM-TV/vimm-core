@@ -235,10 +235,7 @@
                     </div>
                 </div>
                 <div class="quality-menu">
-                    <div class="quality-option" data-quality="auto">Auto</div>
-                    <div class="quality-option" data-quality="1080p">1080p</div>
-                    <div class="quality-option" data-quality="720p">720p</div>
-                    <div class="quality-option" data-quality="480p">480p</div>
+                    <!-- Quality options will be populated dynamically -->
                 </div>
             </div>
         </div>
@@ -395,7 +392,45 @@
                         hls = new Hls();
                         hls.loadSource(streamUrl);
                         hls.attachMedia(video);
+                        
+                        // Handle manifest parsing and quality levels
                         hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                            const qualityMenu = document.querySelector('.quality-menu');
+                            const levels = hls.levels;
+                            
+                            // Clear existing menu items
+                            qualityMenu.innerHTML = '';
+                            
+                            // Add Auto quality option
+                            const autoOption = document.createElement('div');
+                            autoOption.className = 'quality-option';
+                            autoOption.setAttribute('data-quality', 'auto');
+                            autoOption.textContent = 'Auto';
+                            autoOption.addEventListener('click', () => {
+                                hls.currentLevel = -1; // -1 means auto
+                                qualityMenu.style.display = 'none';
+                            });
+                            qualityMenu.appendChild(autoOption);
+                            
+                            // Add available quality options
+                            levels.forEach((level, index) => {
+                                const option = document.createElement('div');
+                                option.className = 'quality-option';
+                                option.setAttribute('data-quality', index);
+                                
+                                // Format the quality label
+                                const height = level.height;
+                                const bitrate = Math.round(level.bitrate / 1000);
+                                option.textContent = `${height}p (${bitrate}kbps)`;
+                                
+                                option.addEventListener('click', () => {
+                                    hls.currentLevel = index;
+                                    qualityMenu.style.display = 'none';
+                                });
+                                qualityMenu.appendChild(option);
+                            });
+
+                            // Start playback
                             video.play()
                                 .then(() => {
                                     playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
@@ -406,10 +441,23 @@
                                 });
                         });
 
-                        // Quality control
+                        // Update quality indicator when quality changes
                         hls.on(Hls.Events.LEVEL_SWITCHED, function(event, data) {
                             const quality = hls.levels[data.level];
-                            console.log('Current quality:', quality.height + 'p');
+                            const qualityOptions = document.querySelectorAll('.quality-option');
+                            
+                            // Update the selected quality visual indicator
+                            qualityOptions.forEach(option => {
+                                if (hls.currentLevel === -1 && option.getAttribute('data-quality') === 'auto') {
+                                    option.style.color = '#9147ff';  // Highlight auto if auto-quality is active
+                                } else if (parseInt(option.getAttribute('data-quality')) === hls.currentLevel) {
+                                    option.style.color = '#9147ff';  // Highlight selected quality
+                                } else {
+                                    option.style.color = '#fff';     // Reset other options
+                                }
+                            });
+                            
+                            console.log('Current quality:', quality ? quality.height + 'p' : 'auto');
                         });
                     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                         video.src = streamUrl;
