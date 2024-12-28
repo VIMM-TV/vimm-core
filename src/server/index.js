@@ -119,11 +119,12 @@ initializeDatabase().then(() => {
                 // });
 
                 session.sendStatusMessage(id, 'error', 'NetStream.Publish.Unauthorized', 'Invalid stream key');
+                return;
     
-                if (session.pushStream) {
-                    session.pushStream.stop();
-                }
-                session.stop();
+                // if (session.pushStream) {
+                //     session.pushStream.stop();
+                // }
+                // session.stop();
             } else {
                 Logger.log('[Authentication Success]', `Valid stream key: ${streamKey}`);
                 const user = await getUserByStreamKey(streamKey);
