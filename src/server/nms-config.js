@@ -14,7 +14,7 @@ const config = {
     },
     auth: {
         play: false,
-        publish: true
+        publish: false
     }
 };
 
