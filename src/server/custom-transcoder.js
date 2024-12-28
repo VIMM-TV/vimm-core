@@ -1,6 +1,7 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const config = require('../../config/default');
 
 class CustomTranscoder {
     constructor() {
@@ -49,7 +50,7 @@ class CustomTranscoder {
           fs.mkdirSync(streamDir, { recursive: true });
       }
 
-      const profiles = [
+      const profiles = config.transcoding ? [
           {
               name: 'source',
               resolution: '1920x1080',
@@ -68,7 +69,14 @@ class CustomTranscoder {
               bitrate: 800,
               encoder: hasGPU ? 'h264_nvenc' : 'libx264'
           }
-      ];
+      ] : [
+            {
+                name: 'source',
+                resolution: '1920x1080',
+                bitrate: 5000,
+                encoder: 'copy'
+            }
+        ];
 
       // Create directories for each profile
       profiles.forEach(profile => {
@@ -105,7 +113,7 @@ class CustomTranscoder {
       );
 
       // Add filter complex for transcoded profiles
-      if (transcodedProfiles.length > 0) {
+      if (config.transcoding && transcodedProfiles.length > 0) {
           ffmpegArgs.push('-filter_complex', this.buildFilterComplex(profiles));
       }
 
