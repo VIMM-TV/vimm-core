@@ -1,5 +1,3 @@
-const { getTranscodingConfig } = require('./transcoding');
-
 const config = {
     logType: 3,
     rtmp: {
@@ -17,12 +15,6 @@ const config = {
     auth: {
         play: false,
         publish: true
-    },
-    trans: {
-        ffmpeg: '/usr/bin/ffmpeg',
-        tasks: [{
-            ...getTranscodingConfig()
-        }]
     }
 };
 

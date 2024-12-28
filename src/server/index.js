@@ -1,10 +1,14 @@
 const express = require('express');
+const { execSync } = require('child_process');
 const path = require('path');
 const NodeMediaServer = require('node-media-server');
 const sequelize = require('../db');
 const nmsConfig = require('./nms-config');
 const authRoutes = require('../api/routes/auth');
 const { validateStreamKey, getUserByStreamKey, getStreamByHiveAccount, setStreamId } = require('../auth/streamkey');
+const Logger = require('node-media-server/src/node_core_logger');
+const CustomTranscoder = require('./custom-transcoder');
+const transcoder = new CustomTranscoder();
 
 const app = express();
 const nms = new NodeMediaServer(nmsConfig);
@@ -13,7 +17,7 @@ const nms = new NodeMediaServer(nmsConfig);
 async function initializeDatabase() {
     try {
         await sequelize.sync();
-        console.log('Database synchronized successfully');
+        Logger.log('Database synchronized successfully');
     } catch (error) {
         console.error('Error synchronizing database:', error);
         process.exit(1);
@@ -64,11 +68,11 @@ initializeDatabase().then(() => {
     // Start HTTP server
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
-        console.log(`HTTP Server running on port ${PORT}`);
+        Logger.log(`HTTP Server running on port ${PORT}`);
     });
 
     nms.on('preConnect', (id, args) => {
-        console.log('[NodeEvent on preConnect]', {
+        Logger.log('[NodeEvent on preConnect]', {
             id,
             args
         });
@@ -80,7 +84,7 @@ initializeDatabase().then(() => {
 
     // Set up Node-Media-Server authentication
     nms.on('prePublish', async (id, StreamPath, args) => {
-        console.log('[NodeEvent on prePublish]', {
+        Logger.log('[NodeEvent on prePublish]', {
             id,
             StreamPath,
             args
@@ -105,7 +109,7 @@ initializeDatabase().then(() => {
         try {
             const isValid = await validateStreamKey(streamKey);
             if (!isValid) {
-                console.log('[Authentication Failed]', `Invalid stream key: ${streamKey}`);
+                Logger.log('[Authentication Failed]', `Invalid stream key: ${streamKey}`);
                 const session = nms.getSession(id);
                 session.reject({
                     code: 'NetConnection.Connect.Rejected',
@@ -117,11 +121,11 @@ initializeDatabase().then(() => {
                 }
                 session.stop();
             } else {
-                console.log('[Authentication Success]', `Valid stream key: ${streamKey}`);
+                Logger.log('[Authentication Success]', `Valid stream key: ${streamKey}`);
                 const user = await getUserByStreamKey(streamKey);
                 if (user) {
                     await setStreamId(user.hiveAccount, id);
-                    console.log(`[Stream ID Set] Stream ID ${id} set for Hive account ${user.hiveAccount}`);
+                    Logger.log(`[Stream ID Set] Stream ID ${id} set for Hive account ${user.hiveAccount}`);
                 }
             }
         } catch (error) {
@@ -133,27 +137,31 @@ initializeDatabase().then(() => {
 
     // Optional: Log when streams start/end
     nms.on('postPublish', (id, StreamPath, args) => {
-        console.log('[NodeEvent on postPublish]', `id=${id} StreamPath=${StreamPath}`);
+        Logger.log('[NodeEvent on postPublish]', `id=${id} StreamPath=${StreamPath}`);
+        const inputUrl = `rtmp://localhost:1935${StreamPath}`;
+        transcoder.startTranscoding(id, inputUrl);
     });
 
     nms.on('donePublish', (id, StreamPath, args) => {
-        console.log('[NodeEvent on donePublish]', `id=${id} StreamPath=${StreamPath}`);
+        Logger.log('[NodeEvent on donePublish]', `id=${id} StreamPath=${StreamPath}`);
+        transcoder.stopTranscoding(id); 
+        execSync(`rm -rf ./media/live/${id}`);
     });
 
     // Monitor HLS segment generation
     nms.on('postTranscode', (id, StreamPath, args) => {
-        console.log('[Transcode]', `Stream ${StreamPath} transcoding started`);
+        Logger.log('[Transcode]', `Stream ${StreamPath} transcoding started`);
     });
 
     nms.on('doneTranscode', (id, StreamPath, args) => {
-        console.log('[Transcode]', `Stream ${StreamPath} transcoding finished`);
+        Logger.log('[Transcode]', `Stream ${StreamPath} transcoding finished`);
         execSync(`rm -rf ./media/live/${id}`);
     });
 
     // Run Node Media Server
     try {
         nms.run();
-        console.log('Media server running on RTMP port 1935 and HTTP port 8000');
+        Logger.log('Media server running on RTMP port 1935 and HTTP port 8000');
     } catch (error) {
         console.error('Error starting media server:', error);
         process.exit(1);
