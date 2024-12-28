@@ -73,10 +73,9 @@ initializeDatabase().then(() => {
         Logger.log(`HTTP Server running on port ${PORT}`);
     });
 
-    nms.on('preConnect', (id, StreamPath, args) => {
+    nms.on('preConnect', (id, args) => {
         Logger.log('[NodeEvent on preConnect]', {
             id,
-            StreamPath,
             args
         });
         
