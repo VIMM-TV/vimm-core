@@ -142,7 +142,9 @@ class CustomTranscoder {
 
       console.log('Starting FFmpeg with args:', ffmpegArgs.join(' '));
 
-      const ffmpeg = spawn(this.ffmpegPath, ffmpegArgs);
+      const ffmpeg = spawn(this.ffmpegPath, ffmpegArgs, {
+        stdio: ['pipe', 'ignore', 'ignore']
+      });
       this.activeStreams.set(streamId, ffmpeg);
 
         ffmpeg.stdout.on('data', (data) => {
