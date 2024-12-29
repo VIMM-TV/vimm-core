@@ -1,30 +1,44 @@
-## Development Status
+# VIMM Core
 
-This project is currently in early development. We are actively working on the core streaming functionality and integration with other VIMM ecosystem components.
+VIMM Core is a high-performance streaming server that forms the foundation of the VIMM ecosystem. It provides robust multi-protocol streaming capabilities, advanced media processing, and seamless integration with other VIMM components.
 
-## Technology Stack
+## VIMM Ecosystem
 
-- Node.js/TypeScript
-- FFmpeg for media processing
-- WebRTC/RTMP/HLS protocols
-- Redis for caching
-- WebSocket for real-time communication
+VIMM Core is part of a larger ecosystem of components:
 
-## License
+- **VIMM Core** (this repository) - Core streaming server with multi-protocol support
+- [VIMM Chat](https://github.com/VIMM-TV/vimm-chat) - Chat server and implementation for real-time stream interaction
+- [VIMM Frontend](https://github.com/VIMM-TV/vimm-frontend) - Reference frontend application integrating all VIMM components
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## Planned Features
 
-## Support
+### Streaming Capabilities
+- Multi-protocol support (RTMP, WebRTC, HLS)
+- Adaptive bitrate streaming
+- Low-latency streaming options
+- Stream transcoding and scaling
+- Recording and VOD support
 
-- [GitHub Issues](https://github.com/VIMM-TV/vimm-core/issues)
+### Media Processing
+- FFmpeg integration
+- Hardware acceleration support
+- Multiple quality profiles
+- Thumbnail generation
+- Stream health monitoring
 
----
+### Integration Features
+- WebSocket-based real-time updates
+- Redis caching system
+- REST API for stream management
+- Authentication system
+- Metrics and analytics
 
-Powered by the Hive blockchain. Built by VIMM.
-
-## Development Status
-
-This project is currently in early development. We are actively working on the core streaming functionality and integration with other VIMM ecosystem components.
+### Performance Features
+- Horizontal scaling support
+- Load balancing
+- Edge caching
+- Resource optimization
+- Network resilience
 
 ## Technology Stack
 
@@ -35,6 +49,7 @@ This project is currently in early development. We are actively working on the c
 - WebSocket for real-time communication
 
 ## Dependencies
+
 ```bash
 # For Ubuntu/Debian
 sudo apt update
@@ -44,13 +59,14 @@ sudo apt install ffmpeg
 sudo apt install nvidia-cuda-toolkit
 ```
 
-## License
+## Development Status
+This project is currently in early development. We are actively working on the core streaming functionality and integration with other VIMM ecosystem components.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Support
-
-- [GitHub Issues](https://github.com/VIMM-TV/vimm-core/issues)
+[GitHub Issues](https://github.com/VIMM-TV/vimm-core/issues)
 
 ---
 
