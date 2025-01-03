@@ -114,8 +114,6 @@ initializeDatabase().then(() => {
             const isValid = await validateStreamKey(streamKey);
             if (!isValid) {
                 Logger.log('[Authentication Failed]', `Invalid stream key: ${streamKey}`);
-                const session = nms.getSession(id);
-
                 session.sendStatusMessage(id, 'error', 'NetStream.Publish.Unauthorized', 'Invalid stream key');
                 session.reject();
             } else {
@@ -124,41 +122,32 @@ initializeDatabase().then(() => {
                 if (user) {
                     await setStreamId(user.hiveAccount, id);
                     Logger.log(`[Stream ID Set] Stream ID ${id} set for Hive account ${user.hiveAccount}`);
+                    
+                    // Move Hive post creation here, after stream ID is set
+                    try {
+                        console.log(`Creating Hive post for user: ${user.hiveAccount} with stream ID: ${id}`);
+                        await hivePostManager.createStreamPost(id, {
+                            hiveAccount: user.hiveAccount,
+                            streamKey: user.streamKey,
+                            streamTitle: 'Live Stream',
+                            streamDescription: 'test',
+                            streamLanguage: 'EN_US'
+                        });
+                    } catch (error) {
+                        console.error('Failed to create Hive post:', error);
+                    }
                 }
             }
         } catch (error) {
             console.error('[Authentication Error]', error);
-            const session = nms.getSession(id);
             session.reject();
         }
     });
-
-    // Optional: Log when streams start/end
+    
+    // Modify postPublish to remove the Hive post creation
     nms.on('postPublish', async (id, StreamPath, args) => {
         Logger.log('[NodeEvent on postPublish]', `id=${id} StreamPath=${StreamPath}`);
         const inputUrl = `rtmp://localhost:1935${StreamPath}`;
-    
-        try {
-            // Get user data using the stream ID instead of stream key
-            const user = await getUserByStreamId(StreamPath.split('/')[2]);
-            if (user) {
-                console.log(`Creating Hive post for user: ${user.hiveAccount} with stream ID: ${id}`);
-                await hivePostManager.createStreamPost(id, {
-                    hiveAccount: user.hiveAccount,
-                    streamKey: user.streamKey,
-                    streamTitle: 'Live Stream',
-                    streamDescription: 'test',
-                    streamLanguage: 'EN_US'
-                }).catch(error => {
-                    console.error('Failed to create Hive post:', error);
-                });
-            } else {
-                console.error(`Could not find user for stream ID: ${id}`);
-            }
-        } catch (error) {
-            console.error('Error in postPublish handler:', error);
-        }
-    
         transcoder.startTranscoding(id, inputUrl);
     });
 
