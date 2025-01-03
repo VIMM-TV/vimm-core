@@ -35,7 +35,8 @@ class HivePostManager {
         });
 
         try {
-            const permlink = `vimm-stream-${streamId}-${Date.now()}`;
+            const safeStreamId = streamId.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+            const permlink = `vimm-stream-${safeStreamId}-${Date.now()}`;
             const postingKey = PrivateKey.fromString(process.env.HIVE_POSTING_KEY);
 
             const operations = [[
