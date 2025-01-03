@@ -144,16 +144,21 @@ initializeDatabase().then(() => {
             const user = await getUserByStreamKey(streamKey);
             if (user) {
                 // Create Hive post
-                await hivePostManager.createStreamPost(id, user, {
-                    title: 'Live Stream',
-                    description: 'test',
-                    language: 'EN_US'
+                console.log('Creating Hive post for user:', user.hiveAccount);  // Add this log
+                await hivePostManager.createStreamPost(id, {
+                    hiveAccount: user.hiveAccount,
+                    streamKey: user.streamKey,
+                    streamTitle: 'Live Stream',
+                    streamDescription: 'test',
+                    streamLanguage: 'EN_US'
+                }).catch(error => {
+                    console.error('Failed to create Hive post:', error);  // Add this error handler
                 });
             }
         } catch (error) {
-            console.error('Error creating Hive post:', error);
+            console.error('Error in postPublish handler:', error);
         }
-
+    
         transcoder.startTranscoding(id, inputUrl);
     });
 
