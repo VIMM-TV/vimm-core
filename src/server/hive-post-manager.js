@@ -1,10 +1,14 @@
-const { Client } = require('@hiveio/dhive');
+const { Client, PrivateKey } = require('@hiveio/dhive');
+const hiveConfig = require('../../config/hive');
 
 class HivePostManager {
     constructor() {
-        // Initialize dhive client
         this.client = new Client(['https://api.hive.blog', 'https://api.hivekings.com']);
-        this.activePosts = new Map(); // Store post references by streamId
+        this.activePosts = new Map();
+        
+        if (!process.env.HIVE_POSTING_KEY) {
+            console.warn('WARNING: HIVE_POSTING_KEY environment variable not set');
+        }
     }
 
     async createStreamPost(streamId, userData, streamMetadata) {
@@ -31,9 +35,57 @@ class HivePostManager {
         });
 
         try {
-            // TODO: Implement the actual post creation.
             const permlink = `vimm-stream-${streamId}-${Date.now()}`;
-            
+            const postingKey = PrivateKey.fromString(process.env.HIVE_POSTING_KEY);
+
+            const operations = [[
+                'comment',
+                {
+                    parent_author: '',
+                    parent_permlink: hiveConfig.defaultTags[0],
+                    author: hiveAccount,
+                    permlink: permlink,
+                    title: title,
+                    body: body,
+                    json_metadata: JSON.stringify({
+                        tags: hiveConfig.defaultTags,
+                        app: 'vimm.tv',
+                        image: ['https://vimm.tv/logo.png'],  // Add your logo URL here
+                        format: 'markdown',
+                        stream: {
+                            id: streamId,
+                            title: streamTitle,
+                            language: streamLanguage,
+                            startTime: currentDate
+                        }
+                    })
+                }
+            ]];
+
+            // Add beneficiaries if configured
+            if (hiveConfig.beneficiaries && hiveConfig.beneficiaries.length > 0) {
+                operations.push([
+                    'comment_options',
+                    {
+                        author: hiveAccount,
+                        permlink: permlink,
+                        max_accepted_payout: '1000000.000 HBD',
+                        percent_hbd: 10000,
+                        allow_votes: true,
+                        allow_curation_rewards: true,
+                        extensions: [[
+                            0,
+                            {
+                                beneficiaries: hiveConfig.beneficiaries
+                            }
+                        ]]
+                    }
+                ]);
+            }
+
+            // Broadcast the transaction
+            await this.client.broadcast.sendOperations(operations, postingKey);
+
             // Store post reference for future updates
             this.activePosts.set(streamId, {
                 author: hiveAccount,
@@ -41,10 +93,9 @@ class HivePostManager {
                 startTime: currentDate
             });
 
-            return {
-                author: hiveAccount,
-                permlink
-            };
+            console.log(`Created Hive post for stream ${streamId}: @${hiveAccount}/${permlink}`);
+            return { author: hiveAccount, permlink };
+
         } catch (error) {
             console.error('Error creating Hive post:', error);
             throw error;
@@ -71,11 +122,42 @@ class HivePostManager {
                 duration: this._calculateDuration(startTime, endTime)
             });
 
-            // TODO: Implement the actual post update.
-            
+            const postingKey = PrivateKey.fromString(process.env.HIVE_POSTING_KEY);
+
+            const operations = [[
+                'comment',
+                {
+                    parent_author: '',
+                    parent_permlink: hiveConfig.defaultTags[0],
+                    author: author,
+                    permlink: permlink,
+                    title: `Stream Ended - ${new Date(endTime).toUTCString()}`,
+                    body: body,
+                    json_metadata: JSON.stringify({
+                        tags: hiveConfig.defaultTags,
+                        app: 'vimm.tv',
+                        image: ['https://vimm.tv/logo.png'],
+                        format: 'markdown',
+                        stream: {
+                            id: streamId,
+                            status: 'offline',
+                            startTime: startTime,
+                            endTime: endTime,
+                            duration: this._calculateDuration(startTime, endTime)
+                        }
+                    })
+                }
+            ]];
+
+            // Broadcast the update
+            await this.client.broadcast.sendOperations(operations, postingKey);
+
             if (status === 'offline') {
                 this.activePosts.delete(streamId);
             }
+
+            console.log(`Updated Hive post for stream ${streamId}: @${author}/${permlink}`);
+
         } catch (error) {
             console.error('Error updating Hive post:', error);
             throw error;
