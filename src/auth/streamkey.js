@@ -46,6 +46,24 @@ async function getUserByStreamKey(streamKey) {
     }
 }
 
+async function getUserByStreamId(streamId) {
+    try {
+        const user = await StreamKey.findOne({
+            where: {
+                streamID: streamId
+            }
+        });
+        if (!user) {
+            console.log(`No user found with stream ID: ${streamId}`);
+            return null;
+        }
+        return user;
+    } catch (error) {
+        console.error('Error finding user by stream ID:', error);
+        return null;
+    }
+}
+
 async function getStreamByHiveAccount(hiveAccount) {
     try {
         const user = await StreamKey.findOne({
@@ -86,6 +104,7 @@ module.exports = {
     generateStreamKey,
     validateStreamKey,
     getUserByStreamKey,
+    getUserByStreamId,
     getStreamByHiveAccount,
     setStreamId
 };

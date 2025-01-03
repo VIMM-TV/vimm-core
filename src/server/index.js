@@ -135,16 +135,14 @@ initializeDatabase().then(() => {
 
     // Optional: Log when streams start/end
     nms.on('postPublish', async (id, StreamPath, args) => {
-        const streamKey = StreamPath.split('/')[2];
         Logger.log('[NodeEvent on postPublish]', `id=${id} StreamPath=${StreamPath}`);
         const inputUrl = `rtmp://localhost:1935${StreamPath}`;
     
         try {
-            // Get user data and stream metadata
-            const user = await getUserByStreamKey(streamKey);
+            // Get user data using the stream ID instead of stream key
+            const user = await getUserByStreamId(id);
             if (user) {
-                // Create Hive post
-                console.log('Creating Hive post for user:', user.hiveAccount);  // Add this log
+                console.log(`Creating Hive post for user: ${user.hiveAccount} with stream ID: ${id}`);
                 await hivePostManager.createStreamPost(id, {
                     hiveAccount: user.hiveAccount,
                     streamKey: user.streamKey,
@@ -152,8 +150,10 @@ initializeDatabase().then(() => {
                     streamDescription: 'test',
                     streamLanguage: 'EN_US'
                 }).catch(error => {
-                    console.error('Failed to create Hive post:', error);  // Add this error handler
+                    console.error('Failed to create Hive post:', error);
                 });
+            } else {
+                console.error(`Could not find user for stream ID: ${id}`);
             }
         } catch (error) {
             console.error('Error in postPublish handler:', error);
