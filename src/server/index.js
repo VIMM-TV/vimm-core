@@ -140,7 +140,7 @@ initializeDatabase().then(() => {
     
         try {
             // Get user data using the stream ID instead of stream key
-            const user = await getUserByStreamId(id);
+            const user = await getUserByStreamId(StreamPath.split('/')[2]);
             if (user) {
                 console.log(`Creating Hive post for user: ${user.hiveAccount} with stream ID: ${id}`);
                 await hivePostManager.createStreamPost(id, {
