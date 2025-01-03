@@ -145,9 +145,9 @@ initializeDatabase().then(() => {
             if (user) {
                 // Create Hive post
                 await hivePostManager.createStreamPost(id, user, {
-                    title: args.title || 'Live Stream',
-                    description: args.description,
-                    language: args.language
+                    title: 'Live Stream',
+                    description: 'test',
+                    language: 'EN_US'
                 });
             }
         } catch (error) {
