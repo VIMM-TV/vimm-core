@@ -135,13 +135,14 @@ initializeDatabase().then(() => {
 
     // Optional: Log when streams start/end
     nms.on('postPublish', async (id, StreamPath, args) => {
+        const streamKey = StreamPath.split('/')[2];
         Logger.log('[NodeEvent on postPublish]', `id=${id} StreamPath=${StreamPath}`);
         const inputUrl = `rtmp://localhost:1935${StreamPath}`;
         transcoder.startTranscoding(id, inputUrl);
     
         try {
             // Get user data and stream metadata
-            const user = await getUserByStreamKey(args.streamKey);
+            const user = await getUserByStreamKey(streamKey);
             if (user) {
                 // Create Hive post
                 await hivePostManager.createStreamPost(id, user, {
