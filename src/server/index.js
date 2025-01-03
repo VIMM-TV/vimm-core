@@ -138,7 +138,6 @@ initializeDatabase().then(() => {
         const streamKey = StreamPath.split('/')[2];
         Logger.log('[NodeEvent on postPublish]', `id=${id} StreamPath=${StreamPath}`);
         const inputUrl = `rtmp://localhost:1935${StreamPath}`;
-        transcoder.startTranscoding(id, inputUrl);
     
         try {
             // Get user data and stream metadata
@@ -154,6 +153,8 @@ initializeDatabase().then(() => {
         } catch (error) {
             console.error('Error creating Hive post:', error);
         }
+
+        transcoder.startTranscoding(id, inputUrl);
     });
 
     nms.on('donePublish', async (id, StreamPath, args) => {
