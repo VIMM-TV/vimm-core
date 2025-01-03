@@ -59,7 +59,7 @@ app.get('/api/stream/:identifier', async (req, res) => {
         // Return the RTMP stream path/ID
         res.json({
             streamId: streamId.streamID,
-            rtmpPath: `rtmp://localhost/live/${streamId.streamID}`
+            rtmpPath: `rtmp://${process.env.SERVER_IP || 'localhost'}/live/${streamId.streamID}`
         });
     } catch (error) {
         console.error('Error fetching stream:', error);
