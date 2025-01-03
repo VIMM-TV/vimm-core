@@ -24,6 +24,21 @@ const StreamKey = sequelize.define('StreamKey', {
     unique: false,
     field: 'stream_id'
   },
+  streamTitle: {
+    type: DataTypes.STRING(255),  // Limit title to 255 characters
+    allowNull: true,
+    field: 'stream_title'
+  },
+  streamDescription: {
+    type: DataTypes.TEXT,         // TEXT type for longer descriptions
+    allowNull: true,
+    field: 'stream_description'
+  },
+  streamLanguage: {
+    type: DataTypes.STRING(10),   // ISO language codes are typically 2-5 characters
+    allowNull: true,
+    field: 'stream_language'
+  },
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,

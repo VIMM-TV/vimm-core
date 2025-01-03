@@ -9,6 +9,8 @@ const { validateStreamKey, getUserByStreamKey, getStreamByHiveAccount, setStream
 const Logger = require('node-media-server/src/node_core_logger');
 const CustomTranscoder = require('./custom-transcoder');
 const transcoder = new CustomTranscoder();
+const HivePostManager = require('./hive-post-manager');
+const hivePostManager = new HivePostManager();
 
 const app = express();
 const nms = new NodeMediaServer(nmsConfig);
@@ -132,16 +134,38 @@ initializeDatabase().then(() => {
     });
 
     // Optional: Log when streams start/end
-    nms.on('postPublish', (id, StreamPath, args) => {
+    nms.on('postPublish', async (id, StreamPath, args) => {
         Logger.log('[NodeEvent on postPublish]', `id=${id} StreamPath=${StreamPath}`);
         const inputUrl = `rtmp://localhost:1935${StreamPath}`;
         transcoder.startTranscoding(id, inputUrl);
+    
+        try {
+            // Get user data and stream metadata
+            const user = await getUserByStreamKey(args.streamKey);
+            if (user) {
+                // Create Hive post
+                await hivePostManager.createStreamPost(id, user, {
+                    title: args.title || 'Live Stream',
+                    description: args.description,
+                    language: args.language
+                });
+            }
+        } catch (error) {
+            console.error('Error creating Hive post:', error);
+        }
     });
 
-    nms.on('donePublish', (id, StreamPath, args) => {
+    nms.on('donePublish', async (id, StreamPath, args) => {
         Logger.log('[NodeEvent on donePublish]', `id=${id} StreamPath=${StreamPath}`);
-        transcoder.stopTranscoding(id); 
+        transcoder.stopTranscoding(id);
         execSync(`rm -rf ./media/live/${id}`);
+    
+        try {
+            // Update Hive post to show stream has ended
+            await hivePostManager.updateStreamPost(id, 'offline');
+        } catch (error) {
+            console.error('Error updating Hive post:', error);
+        }
     });
 
     // Monitor HLS segment generation
