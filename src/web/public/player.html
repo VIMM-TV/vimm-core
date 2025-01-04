@@ -193,12 +193,54 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        #ad-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            display: none;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        #back-to-stream {
+            display: block;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #9147ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+            text-align: center;
+        }
+
+        #back-to-stream:hover {
+            background: #7f2cff;
+        }
     </style>
 </head>
 <body>
     <div id="player-wrapper">
         <div id="video-container">
             <video id="videoPlayer"></video>
+            <div id="ad-container">
+                <div id="frame" style="width: 300px;">
+                    <iframe data-aa='2374197' src='//ad.a-ads.com/2374197?size=300x250' 
+                            style='width:300px; height:250px; border:0px; padding:0; overflow:hidden; background-color: transparent;'>
+                    </iframe>
+                    <a style="display: block; text-align: right; font-size: 12px" id="frame-link" 
+                       href="https://aads.com/campaigns/new/?source_id=2374197&source_type=ad_unit&partner=2374197">
+                        Advertise here
+                    </a>
+                </div>
+                <button id="back-to-stream">Back to Stream</button>
+            </div>
             <div class="buffer-indicator">
                 <div class="spinner"></div>
             </div>
@@ -493,6 +535,34 @@
                 e.preventDefault();
                 theaterBtn.click();
             }
+        });
+
+        // Ad handling
+        const adContainer = document.getElementById('ad-container');
+        const backToStreamBtn = document.getElementById('back-to-stream');
+
+        // Show ad when video is paused
+        video.addEventListener('pause', () => {
+            // Show ad when paused and on initial load.
+            adContainer.style.display = 'block';
+        });
+
+        // Hide ad when video plays
+        video.addEventListener('play', () => {
+            adContainer.style.display = 'none';
+        });
+
+        // Back to stream button handler
+        backToStreamBtn.addEventListener('click', () => {
+            adContainer.style.display = 'none';
+            video.play()
+                .then(() => {
+                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                })
+                .catch(error => {
+                    console.error('Playback failed:', error);
+                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                });
         });
     </script>
 </body>
