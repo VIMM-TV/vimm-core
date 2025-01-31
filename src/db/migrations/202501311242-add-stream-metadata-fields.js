@@ -3,8 +3,8 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.addColumn(
-      'StreamKeys',
-      'streamCategory',
+      'stream_keys',
+      'stream_category',
       {
         type: Sequelize.STRING,
         allowNull: true
@@ -13,6 +13,6 @@ module.exports = {
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.removeColumn('StreamKeys', 'streamCategory');
+    await queryInterface.removeColumn('stream_keys', 'stream_category');
   }
 };
