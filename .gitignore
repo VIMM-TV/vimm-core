@@ -136,4 +136,3 @@ dist
 package-lock.json
 
 media/
-src/db/migrations/*.js

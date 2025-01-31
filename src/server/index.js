@@ -5,6 +5,7 @@ const NodeMediaServer = require('node-media-server');
 const sequelize = require('../db');
 const nmsConfig = require('./nms-config');
 const authRoutes = require('../api/routes/auth');
+const streamsRoutes = require('../api/routes/streams');
 const { validateStreamKey, getUserByStreamKey, getUserByStreamId, getStreamByHiveAccount, setStreamId } = require('../auth/streamkey');
 const Logger = require('node-media-server/src/node_core_logger');
 const CustomTranscoder = require('./custom-transcoder');
@@ -34,6 +35,7 @@ app.use(express.static(path.join(__dirname, '../web/public')));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/streams', streamsRoutes);
 app.use('/live', express.static(path.join(__dirname, '../../media/live')));
 
 app.get('/api/stream/:identifier', async (req, res) => {
