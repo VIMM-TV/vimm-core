@@ -49,7 +49,8 @@ const StreamKey = sequelize.define('StreamKey', {
     field: 'last_used'
   },
   streamCategory: {
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    field: 'stream_category'
   }
 }, {
   tableName: 'stream_keys',
