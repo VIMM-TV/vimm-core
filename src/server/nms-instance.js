@@ -1,8 +1,29 @@
 const NodeMediaServer = require('node-media-server');
 const config = require('./nms-config');
 
-// Create a single instance of NodeMediaServer
-const nms = new NodeMediaServer(config);
+class MediaServer {
+    constructor() {
+        this.nms = new NodeMediaServer(config);
+        this.isInitialized = false;
+    }
 
-// Export the single instance without running it
-module.exports = nms;
+    async initialize() {
+        if (!this.isInitialized) {
+            await new Promise((resolve, reject) => {
+                this.nms.run();
+                // Give NMS a moment to initialize its internal systems
+                setTimeout(() => {
+                    this.isInitialized = true;
+                    resolve();
+                }, 1000);
+            });
+        }
+        return this.nms;
+    }
+
+    getInstance() {
+        return this.nms;
+    }
+}
+
+module.exports = new MediaServer();
