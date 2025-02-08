@@ -307,7 +307,7 @@
         let hls = null;
 
         function getStreamPath(hiveAccount) {
-            return fetch(`/api/stream/${hiveAccount}?type=hiveAccount`)
+            return fetch(`/api/streams/path/${hiveAccount}?type=hiveAccount`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Failed to fetch stream path');

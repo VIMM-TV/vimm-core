@@ -37,38 +37,6 @@ async function startServer() {
             res.json({ status: 'ok', timestamp: new Date().toISOString() });
         });
 
-        // Stream lookup endpoint
-        app.get('/api/stream/:identifier', (req, res) => {
-            try {
-                const { identifier } = req.params;
-                const { type } = req.query; // 'hiveAccount' or 'streamKey'
-                
-                let streamId;
-                if (type === 'hiveAccount') {
-                    // Logic to fetch stream ID by hiveAccount
-                    streamId = getStreamByHiveAccount(identifier);
-                } else if (type === 'streamKey') {
-                    // Logic to fetch stream ID by streamKey
-                    streamId = getStreamIdByStreamKey(identifier);
-                } else {
-                    return res.status(400).json({ error: 'Invalid identifier type' });
-                }
-                
-                if (!streamId) {
-                    return res.status(404).json({ error: 'Stream not found' });
-                }
-                
-                // Return the RTMP stream path/ID
-                res.json({
-                    streamId: streamId.streamID,
-                    rtmpPath: `rtmp://${process.env.SERVER_IP || 'localhost'}/live/${streamId.streamID}`
-                });
-            } catch (error) {
-                console.error('Error fetching stream:', error);
-                res.status(500).json({ error: 'Internal server error' });
-            }
-        });
-
         // Set up Node-Media-Server event handlers
         nms.on('preConnect', (id, args) => {
             Logger.log('[NodeEvent on preConnect]', `id=${id} args=${JSON.stringify(args)}`);

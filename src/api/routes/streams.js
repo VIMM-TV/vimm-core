@@ -205,4 +205,35 @@ router.get('/:streamId', async (req, res) => {
     }
 });
 
+router.get('/path/:identifier', async (req, res) => {
+    try {
+        const { identifier } = req.params;
+        const { type } = req.query; // 'hiveAccount' or 'streamKey'
+        
+        let streamId;
+        if (type === 'hiveAccount') {
+            // Logic to fetch stream ID by hiveAccount
+            streamId = await getStreamByHiveAccount(identifier);
+        } else if (type === 'streamKey') {
+            // Logic to fetch stream ID by streamKey
+            streamId = await getStreamIdByStreamKey(identifier);
+        } else {
+            return res.status(400).json({ error: 'Invalid identifier type' });
+        }
+        
+        if (!streamId) {
+            return res.status(404).json({ error: 'Stream not found' });
+        }
+        
+        // Return the RTMP stream path/ID
+        res.json({
+            streamId: streamId.streamID,
+            rtmpPath: `rtmp://${process.env.SERVER_IP || 'localhost'}/live/${streamId.streamID}`
+        });
+    } catch (error) {
+        console.error('Error fetching stream:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;
