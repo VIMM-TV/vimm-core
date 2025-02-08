@@ -7,7 +7,7 @@ const streamsRoutes = require('../api/routes/streams');
 const Logger = require('node-media-server/src/node_core_logger');
 const { validateStreamKey, getUserByStreamKey, setStreamId } = require('../auth/streamkey');
 const { execSync } = require('child_process');
-const hivePostManager = require('../blockchain/hive-post-manager');
+const hivePostManager = require('./hive-post-manager');
 const transcoder = require('../media/transcoder');
 
 // Create Express application
