@@ -21,8 +21,8 @@ router.get('/', async (req, res) => {
         const language = req.query.language;
         const category = req.query.category;
 
-        // Get all active sessions from Node-Media-Server
-        const sessions = nms.getSession();
+        // Get all active sessions from Node-Media-Server using getSessions() instead of getSession()
+        const sessions = nms.getSessions();
         
         // Debug log to see raw session data
         console.log('Raw NMS Sessions:', JSON.stringify(sessions, null, 2));
