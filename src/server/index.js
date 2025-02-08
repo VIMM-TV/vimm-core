@@ -35,8 +35,6 @@ app.use(express.static(path.join(__dirname, '../web/public')));
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/streams', streamsRoutes);
-app.use('/api/stream', streamStatusRouter);
 app.use('/live', express.static(path.join(__dirname, '../../media/live')));
 
 app.get('/api/stream/:identifier', async (req, res) => {
@@ -181,6 +179,10 @@ initializeDatabase().then(() => {
     try {
         nms.run();
         Logger.log('Media server running on RTMP port 1935 and HTTP port 8000');
+
+        // Set up API routes after media server is running
+        app.use('/api/streams', streamsRoutes);
+        app.use('/api/stream', streamStatusRouter);
     } catch (error) {
         console.error('Error starting media server:', error);
         process.exit(1);
