@@ -8,7 +8,8 @@ const Logger = require('node-media-server/src/node_core_logger');
 const { validateStreamKey, getUserByStreamKey, setStreamId } = require('../auth/streamkey');
 const { execSync } = require('child_process');
 const hivePostManager = require('./hive-post-manager');
-const transcoder = require('./custom-transcoder');
+const CustomTranscoder = require('./custom-transcoder');
+const transcoder = new CustomTranscoder();
 
 // Create Express application
 const app = express();
