@@ -1,10 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const NodeMediaServer = require('node-media-server');
+const nms = require('../../server/nms-instance');
 const { getUserByStreamId } = require('../../auth/streamkey');
-
-// Get instance of Node-Media-Server
-const nms = new NodeMediaServer(require('../../server/nms-config'));
 
 /**
  * GET /api/stream/:streamId/status
@@ -18,6 +15,14 @@ router.get('/:streamId/status', async (req, res) => {
         
         // Get the session from Node-Media-Server
         const sessions = nms.getSession();
+        
+        if (!sessions) {
+            return res.status(404).json({
+                error: 'No active sessions',
+                message: 'The streaming server has no active sessions'
+            });
+        }
+
         const session = sessions[streamId];
 
         if (!session) {

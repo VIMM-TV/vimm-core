@@ -1,9 +1,9 @@
+const nms = require('./nms-instance');
+
 const express = require('express');
 const { execSync } = require('child_process');
 const path = require('path');
-const NodeMediaServer = require('node-media-server');
 const sequelize = require('../db');
-const nmsConfig = require('./nms-config');
 const authRoutes = require('../api/routes/auth');
 const streamsRoutes = require('../api/routes/streams');
 const streamStatusRouter = require('../api/routes/stream-status');
@@ -15,7 +15,6 @@ const HivePostManager = require('./hive-post-manager');
 const hivePostManager = new HivePostManager();
 
 const app = express();
-const nms = new NodeMediaServer(nmsConfig);
 
 const config = require('../../config/default');
 

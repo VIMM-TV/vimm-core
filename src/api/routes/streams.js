@@ -1,10 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const NodeMediaServer = require('node-media-server');
+const nms = require('../../server/nms-instance');
 const { getUserByStreamId } = require('../../auth/streamkey');
-
-// Get instance of Node-Media-Server
-const nms = new NodeMediaServer(require('../../server/nms-config'));
 
 /**
  * GET /api/streams
@@ -25,6 +22,20 @@ router.get('/', async (req, res) => {
 
         // Get all active sessions from Node-Media-Server
         const sessions = nms.getSession();
+        
+        if (!sessions) {
+            return res.json({
+                streams: [],
+                pagination: {
+                    currentPage: page,
+                    itemsPerPage: limit,
+                    totalItems: 0,
+                    totalPages: 0
+                },
+                timestamp: new Date().toISOString()
+            });
+        }
+
         const activeStreams = [];
 
         // Process each active session
