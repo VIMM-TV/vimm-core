@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mediaServer = require('../../server/nms-instance');
-const { getUserByStreamId } = require('../../auth/streamkey');
+const { getUserByStreamId, getStreamByHiveAccount } = require('../../auth/streamkey');
 
 /**
  * GET /api/streams
