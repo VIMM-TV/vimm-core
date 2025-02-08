@@ -12,6 +12,7 @@ const { getUserByStreamId } = require('../../auth/streamkey');
  * - language (optional): Filter by stream language
  * - category (optional): Filter by stream category
  */
+
 router.get('/', async (req, res) => {
     try {
         // Get query parameters with defaults
@@ -23,81 +24,87 @@ router.get('/', async (req, res) => {
         // Get all active sessions from Node-Media-Server
         const sessions = nms.getSession();
         
-        if (!sessions) {
-            return res.json({
-                streams: [],
-                pagination: {
-                    currentPage: page,
-                    itemsPerPage: limit,
-                    totalItems: 0,
-                    totalPages: 0
-                },
-                timestamp: new Date().toISOString()
-            });
-        }
+        // Debug log to see raw session data
+        console.log('Raw NMS Sessions:', JSON.stringify(sessions, null, 2));
+        
+        let activeStreams = [];
 
-        const activeStreams = [];
-
-        // Process each active session
-        for (const [sessionId, session] of Object.entries(sessions)) {
-            // Only include sessions that are actually streaming
-            if (session.isStarting) {
-                try {
-                    // Get user data associated with this stream
-                    const userData = await getUserByStreamId(sessionId);
-                    
-                    if (userData) {
-                        // Create stream object with relevant information
-                        const streamData = {
-                            id: sessionId,
-                            username: userData.hiveAccount,
-                            title: userData.streamTitle || 'Untitled Stream',
-                            language: userData.streamLanguage,
-                            category: userData.streamCategory,
-                            startTime: session.startTime,
-                            viewers: session.viewers || 0,
-                            thumbnail: `/thumbnails/${sessionId}.jpg`,
-                            isLive: true,
-                            quality: {
-                                width: session.videoWidth || 1920,
-                                height: session.videoHeight || 1080,
-                                fps: session.videoFps || 30,
-                                bitrate: session.videoBitrate || 0
+        if (sessions) {
+            // Convert sessions object to array and process each session
+            activeStreams = await Promise.all(
+                Object.entries(sessions)
+                    .filter(([sessionId, session]) => {
+                        // A session is considered active if it has a pushStream or publishStream
+                        const isActive = session.pushStream || session.publishStream;
+                        console.log(`Session ${sessionId} active state:`, {
+                            hasPushStream: !!session.pushStream,
+                            hasPublishStream: !!session.publishStream,
+                            isActive
+                        });
+                        return isActive;
+                    })
+                    .map(async ([sessionId, session]) => {
+                        try {
+                            // Get user data associated with this stream
+                            const userData = await getUserByStreamId(sessionId);
+                            
+                            if (userData) {
+                                // Only include streams that match filters
+                                if ((!language || userData.streamLanguage === language) &&
+                                    (!category || userData.streamCategory === category)) {
+                                    
+                                    // Get the stream path from pushStream or publishStream
+                                    const streamPath = session.pushStream ? 
+                                        session.pushStream.streamPath :
+                                        (session.publishStream ? session.publishStream.streamPath : null);
+                                        
+                                    return {
+                                        id: sessionId,
+                                        username: userData.hiveAccount,
+                                        title: userData.streamTitle || 'Untitled Stream',
+                                        language: userData.streamLanguage,
+                                        category: userData.streamCategory,
+                                        startTime: session.startTime || Date.now(),
+                                        viewers: session.viewers || 0,
+                                        thumbnail: `/thumbnails/${sessionId}.jpg`,
+                                        isLive: true,
+                                        streamPath,
+                                        quality: {
+                                            width: session.videoWidth || 1920,
+                                            height: session.videoHeight || 1080,
+                                            fps: session.videoFps || 30,
+                                            bitrate: session.videoBitrate || 0
+                                        }
+                                    };
+                                }
                             }
-                        };
-
-                        // Apply filters if specified
-                        if ((!language || streamData.language === language) &&
-                            (!category || streamData.category === category)) {
-                            activeStreams.push(streamData);
+                        } catch (error) {
+                            console.error(`Error processing stream ${sessionId}:`, error);
+                            return null;
                         }
-                    }
-                } catch (error) {
-                    console.error(`Error processing stream ${sessionId}:`, error);
-                }
-            }
-        }
+                        return null;
+                    })
+            );
 
-        // Sort streams by viewer count (descending)
-        activeStreams.sort((a, b) => (b.viewers || 0) - (a.viewers || 0));
+            // Remove null entries and sort by viewer count
+            activeStreams = activeStreams
+                .filter(stream => stream !== null)
+                .sort((a, b) => (b.viewers || 0) - (a.viewers || 0));
+        }
 
         // Calculate pagination
         const startIndex = (page - 1) * limit;
         const endIndex = startIndex + limit;
         const totalStreams = activeStreams.length;
 
-        // Prepare pagination metadata
-        const paginationMeta = {
-            currentPage: page,
-            itemsPerPage: limit,
-            totalItems: totalStreams,
-            totalPages: Math.ceil(totalStreams / limit)
-        };
-
-        // Return paginated results
         res.json({
             streams: activeStreams.slice(startIndex, endIndex),
-            pagination: paginationMeta,
+            pagination: {
+                currentPage: page,
+                itemsPerPage: limit,
+                totalItems: totalStreams,
+                totalPages: Math.ceil(totalStreams / limit)
+            },
             timestamp: new Date().toISOString()
         });
 
