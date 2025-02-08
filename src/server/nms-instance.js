@@ -4,8 +4,5 @@ const config = require('./nms-config');
 // Create a single instance of NodeMediaServer
 const nms = new NodeMediaServer(config);
 
-// Start the server when this module is imported
-nms.run();
-
-// Export the single instance
+// Export the single instance without running it
 module.exports = nms;
