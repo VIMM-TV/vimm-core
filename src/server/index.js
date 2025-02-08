@@ -30,7 +30,7 @@ async function startServer() {
 
         // Serve static files (like thumbnails)
         app.use('/thumbnails', express.static(path.join(__dirname, '../../media/thumbnails')));
-        app.use('/media', express.static(path.join(__dirname, '../../media')));
+        app.use('/live', express.static(path.join(__dirname, '../../media/live')));
 
         // Health check endpoint
         app.get('/health', (req, res) => {
