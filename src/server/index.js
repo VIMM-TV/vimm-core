@@ -46,10 +46,10 @@ async function startServer() {
                 let streamId;
                 if (type === 'hiveAccount') {
                     // Logic to fetch stream ID by hiveAccount
-                    streamId = await getStreamByHiveAccount(identifier);
+                    streamId = getStreamByHiveAccount(identifier);
                 } else if (type === 'streamKey') {
                     // Logic to fetch stream ID by streamKey
-                    streamId = await getStreamIdByStreamKey(identifier);
+                    streamId = getStreamIdByStreamKey(identifier);
                 } else {
                     return res.status(400).json({ error: 'Invalid identifier type' });
                 }
