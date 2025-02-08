@@ -7,7 +7,8 @@ const streamsRoutes = require('../api/routes/streams');
 const Logger = require('node-media-server/src/node_core_logger');
 const { validateStreamKey, getUserByStreamKey, setStreamId } = require('../auth/streamkey');
 const { execSync } = require('child_process');
-const hivePostManager = require('./hive-post-manager');
+const HivePostManager = require('./hive-post-manager');
+const hivePostManager = new HivePostManager();
 const CustomTranscoder = require('./custom-transcoder');
 const transcoder = new CustomTranscoder();
 
