@@ -1,16 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const mediaServer = require('../../server/nms-instance');
-const { getUserByStreamId, getStreamByHiveAccount } = require('../../auth/streamkey');
+const { Op } = require('sequelize');
+const StreamKey = require('../../db/models/streamKey');
 
 /**
  * GET /api/streams
  * Returns a list of active streams with their metadata
- * Query parameters:
- * - page (optional): Page number for pagination
- * - limit (optional): Number of items per page
- * - language (optional): Filter by stream language
- * - category (optional): Filter by stream category
  */
 router.get('/', async (req, res) => {
     try {
@@ -20,106 +15,49 @@ router.get('/', async (req, res) => {
         const language = req.query.language;
         const category = req.query.category;
 
-        // Get NMS instance and sessions
-        const nms = mediaServer.getInstance();
-        const sessions = nms.getSession();
+        // Build where clause based on filters
+        let whereClause = {
+            streamID: { [Op.ne]: null }, // Only streams with IDs (active)
+            isActive: true
+        };
         
-        // Initialize empty array for active streams
-        let activeStreams = [];
-
-        if (!sessions) {
-            return res.json({
-                streams: [],
-                pagination: {
-                    currentPage: page,
-                    totalPages: 0,
-                    totalStreams: 0
-                }
-            });
+        if (language) {
+            whereClause.streamLanguage = language;
+        }
+        
+        if (category) {
+            whereClause.streamCategory = category;
         }
 
-        // Convert sessions object to array and process each session
-        activeStreams = await Promise.all(
-            Object.entries(sessions)
-                .filter(([sessionId, session]) => {
-                    // A session is considered active if it has a pushStream or publishStream
-                    const isActive = session.pushStream || session.publishStream;
-                    return isActive;
-                })
-                .map(async ([sessionId, session]) => {
-                    try {
-                        // Get user data associated with this stream
-                        const userData = await getUserByStreamId(sessionId);
-                        
-                        if (!userData) {
-                            return null;
-                        }
+        // Query the database directly
+        const { count, rows } = await StreamKey.findAndCountAll({
+            where: whereClause,
+            limit: limit,
+            offset: (page - 1) * limit,
+            order: [['lastUsed', 'DESC']] // Sort by most recently used
+        });
 
-                        // Only include streams that match filters
-                        if ((!language || userData.streamLanguage === language) &&
-                            (!category || userData.streamCategory === category)) {
-                            
-                            // Get the stream path from pushStream or publishStream
-                            const streamPath = session.pushStream ? 
-                                session.pushStream.streamPath :
-                                (session.publishStream ? session.publishStream.streamPath : null);
-                                
-                            return {
-                                id: sessionId,
-                                username: userData.hiveAccount,
-                                title: userData.streamTitle || 'Untitled Stream',
-                                description: userData.streamDescription || '',
-                                language: userData.streamLanguage,
-                                category: userData.streamCategory,
-                                tags: userData.streamTags || [],
-                                startTime: session.startTime || Date.now(),
-                                viewers: session.viewers || 0,
-                                thumbnail: `/thumbnails/${sessionId}.jpg`,
-                                isLive: true,
-                                streamPath,
-                                quality: {
-                                    width: session.videoWidth || 1920,
-                                    height: session.videoHeight || 1080,
-                                    fps: session.videoFps || 30,
-                                    bitrate: session.videoBitrate || 0,
-                                    codec: session.videoCodec || 'h264',
-                                    audioBitrate: session.audioBitrate || 0,
-                                    audioCodec: session.audioCodec || 'aac'
-                                },
-                                settings: {
-                                    recordStream: userData.recordStream || false,
-                                    chatEnabled: userData.chatEnabled !== false,
-                                    chatModeration: userData.chatModeration || 'standard',
-                                    allowReplays: userData.allowReplays !== false
-                                }
-                            };
-                        }
-                    } catch (error) {
-                        console.error(`Error processing stream ${sessionId}:`, error);
-                        return null;
-                    }
-                    return null;
-                })
-        );
-
-        // Remove null entries and sort by viewer count
-        activeStreams = activeStreams
-            .filter(stream => stream !== null)
-            .sort((a, b) => (b.viewers || 0) - (a.viewers || 0));
-
-        // Calculate pagination
-        const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + limit;
-        const totalStreams = activeStreams.length;
-        const totalPages = Math.ceil(totalStreams / limit);
+        // Transform data for API response
+        const streams = rows.map(stream => ({
+            id: stream.streamID,
+            username: stream.hiveAccount,
+            title: stream.streamTitle || 'Untitled Stream',
+            description: stream.streamDescription || '',
+            language: stream.streamLanguage,
+            category: stream.streamCategory,
+            startTime: stream.lastUsed,
+            thumbnail: `/thumbnails/${stream.streamID}.jpg`,
+            isLive: true,
+            streamPath: `/live/${stream.streamID}`
+        }));
 
         // Return paginated results
         res.json({
-            streams: activeStreams.slice(startIndex, endIndex),
+            streams: streams,
             pagination: {
                 currentPage: page,
-                totalPages: totalPages,
-                totalStreams: totalStreams,
+                totalPages: Math.ceil(count / limit),
+                totalStreams: count,
                 limit: limit
             }
         });
@@ -140,58 +78,32 @@ router.get('/', async (req, res) => {
 router.get('/:streamId', async (req, res) => {
     try {
         const { streamId } = req.params;
-        const nms = mediaServer.getInstance();
-        const sessions = nms.getSession();
+        
+        const stream = await StreamKey.findOne({
+            where: { 
+                streamID: streamId,
+                isActive: true
+            }
+        });
 
-        if (!sessions || !sessions[streamId]) {
+        if (!stream) {
             return res.status(404).json({
                 error: 'Stream not found',
                 message: `No active stream found with ID: ${streamId}`
             });
         }
 
-        const session = sessions[streamId];
-        const userData = await getUserByStreamId(streamId);
-
-        if (!userData) {
-            return res.status(404).json({
-                error: 'Stream metadata not found',
-                message: 'Unable to find user data for this stream'
-            });
-        }
-
-        const streamPath = session.pushStream ? 
-            session.pushStream.streamPath :
-            (session.publishStream ? session.publishStream.streamPath : null);
-
         const streamData = {
-            id: streamId,
-            username: userData.hiveAccount,
-            title: userData.streamTitle || 'Untitled Stream',
-            description: userData.streamDescription || '',
-            language: userData.streamLanguage,
-            category: userData.streamCategory,
-            tags: userData.streamTags || [],
-            startTime: session.startTime || Date.now(),
-            viewers: session.viewers || 0,
-            thumbnail: `/thumbnails/${streamId}.jpg`,
+            id: stream.streamID,
+            username: stream.hiveAccount,
+            title: stream.streamTitle || 'Untitled Stream',
+            description: stream.streamDescription || '',
+            language: stream.streamLanguage,
+            category: stream.streamCategory,
+            startTime: stream.lastUsed,
+            thumbnail: `/thumbnails/${stream.streamID}.jpg`,
             isLive: true,
-            streamPath,
-            quality: {
-                width: session.videoWidth || 1920,
-                height: session.videoHeight || 1080,
-                fps: session.videoFps || 30,
-                bitrate: session.videoBitrate || 0,
-                codec: session.videoCodec || 'h264',
-                audioBitrate: session.audioBitrate || 0,
-                audioCodec: session.audioCodec || 'aac'
-            },
-            settings: {
-                recordStream: userData.recordStream || false,
-                chatEnabled: userData.chatEnabled !== false,
-                chatModeration: userData.chatModeration || 'standard',
-                allowReplays: userData.allowReplays !== false
-            }
+            streamPath: `/live/${stream.streamID}`
         };
 
         res.json(streamData);
@@ -210,25 +122,27 @@ router.get('/path/:identifier', async (req, res) => {
         const { identifier } = req.params;
         const { type } = req.query; // 'hiveAccount' or 'streamKey'
         
-        let streamId;
+        let whereClause = {};
         if (type === 'hiveAccount') {
-            // Logic to fetch stream ID by hiveAccount
-            streamId = await getStreamByHiveAccount(identifier);
+            whereClause.hiveAccount = identifier;
         } else if (type === 'streamKey') {
-            // Logic to fetch stream ID by streamKey
-            streamId = await getStreamIdByStreamKey(identifier);
+            whereClause.streamKey = identifier;
         } else {
             return res.status(400).json({ error: 'Invalid identifier type' });
         }
         
-        if (!streamId) {
-            return res.status(404).json({ error: 'Stream not found' });
+        const stream = await StreamKey.findOne({
+            where: whereClause
+        });
+        
+        if (!stream || !stream.streamID) {
+            return res.status(404).json({ error: 'Stream not found or not active' });
         }
         
         // Return the RTMP stream path/ID
         res.json({
-            streamId: streamId.streamID,
-            rtmpPath: `rtmp://${process.env.SERVER_IP || 'localhost'}/live/${streamId.streamID}`
+            streamId: stream.streamID,
+            rtmpPath: `rtmp://${process.env.SERVER_IP || 'localhost'}/live/${stream.streamID}`
         });
     } catch (error) {
         console.error('Error fetching stream:', error);

@@ -100,11 +100,44 @@ async function setStreamId(hiveAccount, streamId) {
     }
 }
 
+async function getAllActiveStreams(options = {}) {
+    try {
+        const { limit, offset, language, category } = options;
+        
+        let whereClause = {
+            isLive: true,  // Only get streams that are currently live
+            streamID: { [Op.ne]: null }  // Must have a stream ID
+        };
+        
+        if (language) {
+            whereClause.streamLanguage = language;
+        }
+        
+        if (category) {
+            whereClause.streamCategory = category;
+        }
+        
+        const query = {
+            where: whereClause,
+            order: [['streamStarted', 'DESC']]  // Most recent streams first
+        };
+        
+        if (limit) query.limit = limit;
+        if (offset) query.offset = offset;
+        
+        return await StreamKey.findAndCountAll(query);
+    } catch (error) {
+        console.error('Error getting active streams:', error);
+        return { count: 0, rows: [] };
+    }
+}
+
 module.exports = {
     generateStreamKey,
     validateStreamKey,
     getUserByStreamKey,
     getUserByStreamId,
     getStreamByHiveAccount,
-    setStreamId
+    setStreamId,
+    getAllActiveStreams
 };

@@ -25,17 +25,17 @@ const StreamKey = sequelize.define('StreamKey', {
     field: 'stream_id'
   },
   streamTitle: {
-    type: DataTypes.STRING(255),  // Limit title to 255 characters
+    type: DataTypes.STRING(255),
     allowNull: true,
     field: 'stream_title'
   },
   streamDescription: {
-    type: DataTypes.TEXT,         // TEXT type for longer descriptions
+    type: DataTypes.TEXT,
     allowNull: true,
     field: 'stream_description'
   },
   streamLanguage: {
-    type: DataTypes.STRING(10),   // ISO language codes are typically 2-5 characters
+    type: DataTypes.STRING(10),
     allowNull: true,
     field: 'stream_language'
   },
@@ -43,6 +43,21 @@ const StreamKey = sequelize.define('StreamKey', {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
     field: 'is_active'
+  },
+  isLive: {              // NEW: Stream is currently live
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    field: 'is_live'
+  },
+  viewerCount: {         // NEW: Track viewer count
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    field: 'viewer_count'
+  },
+  streamStarted: {       // NEW: When stream started
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'stream_started'
   },
   lastUsed: {
     type: DataTypes.DATE,
@@ -54,12 +69,13 @@ const StreamKey = sequelize.define('StreamKey', {
   }
 }, {
   tableName: 'stream_keys',
-  timestamps: true, // This will add createdAt and updatedAt fields
-  underscored: true // This will use snake_case for column names
+  timestamps: true,
+  underscored: true
 });
 
+// Fix: Use streamID not streamId in setter method for consistency
 StreamKey.prototype.setStreamId = async function(streamId) {
-  return this.update({ streamId });
+  return this.update({ streamID: streamId });
 };
 
 module.exports = StreamKey;

@@ -64,7 +64,7 @@ async function startServer() {
             if (session.pushStream) {
                 session.pushStream.streamPath = newStreamPath;
             }
-
+        
             try {
                 const isValid = await validateStreamKey(streamKey);
                 if (!isValid) {
@@ -75,7 +75,15 @@ async function startServer() {
                     Logger.log('[Authentication Success]', `Valid stream key: ${streamKey}`);
                     const user = await getUserByStreamKey(streamKey);
                     if (user) {
-                        await setStreamId(user.hiveAccount, id);
+                        // Update the database record with stream info
+                        await user.update({
+                            streamID: id,
+                            isLive: true,
+                            streamStarted: new Date(),
+                            lastUsed: new Date(),
+                            viewerCount: 0
+                        });
+                        
                         Logger.log(`[Stream ID Set] Stream ID ${id} set for Hive account ${user.hiveAccount}`);
                         
                         try {
@@ -107,7 +115,17 @@ async function startServer() {
         nms.on('donePublish', async (id, StreamPath, args) => {
             Logger.log('[NodeEvent on donePublish]', `id=${id} StreamPath=${StreamPath}`);
             transcoder.stopTranscoding(id);
+            
             try {
+                // Find the user by stream ID and update the record
+                const user = await getUserByStreamId(id);
+                if (user) {
+                    await user.update({
+                        isLive: false,
+                        viewerCount: 0
+                    });
+                }
+                
                 execSync(`rm -rf ./media/live/${id}`);
                 await hivePostManager.updateStreamPost(id, 'offline');
             } catch (error) {
