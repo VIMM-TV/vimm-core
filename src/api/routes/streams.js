@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
         // Build where clause based on filters
         let whereClause = {
             streamID: { [Op.ne]: null }, // Only streams with IDs (active)
-            isActive: true
+            isLive: true
         };
         
         if (language) {
@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
             category: stream.streamCategory,
             startTime: stream.lastUsed,
             thumbnail: `/thumbnails/${stream.streamID}.jpg`,
-            isLive: true,
+            isLive: stream.isLive,
             streamPath: `/live/${stream.streamID}`
         }));
 
@@ -102,7 +102,7 @@ router.get('/:streamId', async (req, res) => {
             category: stream.streamCategory,
             startTime: stream.lastUsed,
             thumbnail: `/thumbnails/${stream.streamID}.jpg`,
-            isLive: true,
+            isLive: stream.isLive,
             streamPath: `/live/${stream.streamID}`
         };
 

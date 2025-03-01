@@ -82,7 +82,6 @@ async function startServer() {
                         await user.update({
                             streamID: id,
                             isLive: true,
-                            isActive: true,
                             streamStarted: new Date(),
                             lastUsed: new Date(),
                             viewerCount: 0
@@ -127,7 +126,6 @@ async function startServer() {
                     try {
                         await user.update({
                             isLive: false,
-                            isActive: false,
                             viewerCount: 0
                         });
                         Logger.log(`[Stream Status] Stream ${id} marked as offline`);
@@ -233,7 +231,7 @@ function setupStreamCleanupJob() {
             // Find all streams that are marked as live
             const activeStreams = await StreamKey.findAll({
                 where: {
-                    isActive: true
+                    isLive: true
                 }
             });
             
@@ -260,7 +258,6 @@ function setupStreamCleanupJob() {
                     try {
                         await stream.update({ 
                             isLive: false, 
-                            isActive: false,
                             viewerCount: 0 
                         });
                         console.log(`Database updated for stream ${id}: isLive=false`);
@@ -301,11 +298,6 @@ function setupStreamCleanupJob() {
     }, 30 * 1000); // Run every 30 seconds
 }
 
-/**
- * Checks if a stream is active by examining its HLS files
- * @param {string} streamId - The stream ID to check
- * @returns {Promise<[boolean, string]>} - [isActive, reason]
- */
 async function checkHLSActivity(streamId) {
     return new Promise((resolve) => {
         try {
