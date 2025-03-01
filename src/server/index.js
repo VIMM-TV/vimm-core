@@ -7,6 +7,7 @@ const mediaServer = require('./nms-instance');
 const streamsRoutes = require('../api/routes/streams');
 const Logger = require('node-media-server/src/node_core_logger');
 const { validateStreamKey, getUserByStreamKey, getUserByStreamId, getStreamByHiveAccount, setStreamId } = require('../auth/streamkey');
+const StreamKey = require('../db/models/streamKey');
 const { execSync } = require('child_process');
 const HivePostManager = require('./hive-post-manager');
 const hivePostManager = new HivePostManager();
@@ -226,7 +227,7 @@ function setupStreamCleanupJob() {
     setInterval(async () => {
         try {
             // Find all streams that are marked as live
-            const activeStreams = await getUserByStreamKey.findAll({
+            const activeStreams = await StreamKey.findAll({
                 where: {
                     isLive: true
                 }
