@@ -8,6 +8,7 @@ const streamsRoutes = require('../api/routes/streams');
 const Logger = require('node-media-server/src/node_core_logger');
 const { validateStreamKey, getUserByStreamKey, getUserByStreamId, getStreamByHiveAccount, setStreamId } = require('../auth/streamkey');
 const StreamKey = require('../db/models/streamKey');
+const { Op } = require('sequelize');
 const { execSync } = require('child_process');
 const HivePostManager = require('./hive-post-manager');
 const hivePostManager = new HivePostManager();
@@ -81,6 +82,7 @@ async function startServer() {
                         await user.update({
                             streamID: id,
                             isLive: true,
+                            isActive: true,
                             streamStarted: new Date(),
                             lastUsed: new Date(),
                             viewerCount: 0
@@ -125,6 +127,7 @@ async function startServer() {
                     try {
                         await user.update({
                             isLive: false,
+                            isActive: false,
                             viewerCount: 0
                         });
                         Logger.log(`[Stream Status] Stream ${id} marked as offline`);
@@ -230,7 +233,7 @@ function setupStreamCleanupJob() {
             // Find all streams that are marked as live
             const activeStreams = await StreamKey.findAll({
                 where: {
-                    isLive: true
+                    isActive: true
                 }
             });
             
@@ -257,6 +260,7 @@ function setupStreamCleanupJob() {
                     try {
                         await stream.update({ 
                             isLive: false, 
+                            isActive: false,
                             viewerCount: 0 
                         });
                         console.log(`Database updated for stream ${id}: isLive=false`);
