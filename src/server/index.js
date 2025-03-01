@@ -226,7 +226,7 @@ function setupStreamCleanupJob() {
     setInterval(async () => {
         try {
             // Find all streams that are marked as live
-            const activeStreams = await StreamKey.findAll({
+            const activeStreams = await getUserByStreamKey.findAll({
                 where: {
                     isLive: true
                 }
