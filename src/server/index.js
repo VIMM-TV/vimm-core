@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const fs = require('fs');
 const path = require('path');
 const mediaServer = require('./nms-instance');
 const streamsRoutes = require('../api/routes/streams');
@@ -120,16 +121,53 @@ async function startServer() {
                 // Find the user by stream ID and update the record
                 const user = await getUserByStreamId(id);
                 if (user) {
-                    await user.update({
-                        isLive: false,
-                        viewerCount: 0
-                    });
+                    try {
+                        await user.update({
+                            isLive: false,
+                            viewerCount: 0
+                        });
+                        Logger.log(`[Stream Status] Stream ${id} marked as offline`);
+                    } catch (updateError) {
+                        console.error('Failed to update stream status:', updateError);
+                        // Retry the update
+                        try {
+                            await user.reload();
+                            await user.update({ isLive: false });
+                            Logger.log(`[Stream Status] Stream ${id} marked as offline after retry`);
+                        } catch (retryError) {
+                            console.error('Retry to update stream status failed:', retryError);
+                        }
+                    }
+                } else {
+                    console.error(`No user found with stream ID: ${id}, cannot update status`);
                 }
                 
                 execSync(`rm -rf ./media/live/${id}`);
                 await hivePostManager.updateStreamPost(id, 'offline');
             } catch (error) {
                 console.error('Error in donePublish cleanup:', error);
+            }
+        });
+
+        nms.on('doneConnect', async (id, args) => {
+            Logger.log('[NodeEvent on doneConnect]', `id=${id} args=${JSON.stringify(args)}`);
+            
+            try {
+                // Check for any streams that were associated with this connection
+                const user = await getUserByStreamId(id);
+                if (user && user.isLive) {
+                    await user.update({
+                        isLive: false,
+                        viewerCount: 0
+                    });
+                    Logger.log(`[Stream Status] Stream ${id} marked as offline due to disconnection`);
+                    
+                    // Clean up files and update Hive post
+                    execSync(`rm -rf ./media/live/${id}`);
+                    await hivePostManager.updateStreamPost(id, 'offline');
+                }
+            } catch (error) {
+                console.error('Error handling disconnect cleanup:', error);
             }
         });
 
@@ -176,11 +214,143 @@ async function startServer() {
             Logger.log(`Express server running on port ${port}`);
             Logger.log('Media server running on RTMP port 1935 and HTTP port 8000');
         });
+        setupStreamCleanupJob();
 
     } catch (error) {
         console.error('Failed to start server:', error);
         process.exit(1);
     }
+}
+
+function setupStreamCleanupJob() {
+    setInterval(async () => {
+        try {
+            // Find all streams that are marked as live
+            const activeStreams = await StreamKey.findAll({
+                where: {
+                    isLive: true
+                }
+            });
+            
+            for (const stream of activeStreams) {
+                const id = stream.streamID;
+                if (!id) continue;
+                
+                // Check if HLS files exist and are being updated
+                const isStreamActive = await checkHLSActivity(id);
+                
+                if (!isStreamActive) {
+                    console.log(`Stream ${id} appears to be inactive based on HLS files. Marking as offline.`);
+                    
+                    // Update the database
+                    await stream.update({ 
+                        isLive: false, 
+                        viewerCount: 0 
+                    });
+                    
+                    // Update Hive post
+                    try {
+                        await hivePostManager.updateStreamPost(id, 'offline');
+                    } catch (e) {
+                        console.error(`Failed to update Hive post for ${id}:`, e);
+                    }
+                    
+                    // Stop any transcoding processes that might still be running
+                    transcoder.stopTranscoding(id);
+                    
+                    // Clean up media files
+                    try {
+                        execSync(`rm -rf ./media/live/${id}`);
+                    } catch (e) {
+                        console.error(`Failed to clean up media files for ${id}:`, e);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error in stream cleanup job:', error);
+        }
+    }, 30 * 1000); // Run every 30 seconds
+}
+
+/**
+ * Checks if a stream is active by examining its HLS files
+ * @param {string} streamId - The stream ID to check
+ * @returns {Promise<boolean>} - True if the stream appears active, false otherwise
+ */
+async function checkHLSActivity(streamId) {
+    return new Promise((resolve) => {
+        try {
+            const streamDir = path.join('./media/live', streamId);
+            
+            // Check if the stream directory exists
+            if (!fs.existsSync(streamDir)) {
+                return resolve(false);
+            }
+            
+            // Check if the master playlist exists
+            const masterPlaylistPath = path.join(streamDir, 'master.m3u8');
+            if (!fs.existsSync(masterPlaylistPath)) {
+                return resolve(false);
+            }
+            
+            // Check if source directory exists (should always exist for active streams)
+            const sourceDir = path.join(streamDir, 'source');
+            if (!fs.existsSync(sourceDir)) {
+                return resolve(false);
+            }
+            
+            // Check source index.m3u8 file
+            const indexPath = path.join(sourceDir, 'index.m3u8');
+            if (!fs.existsSync(indexPath)) {
+                return resolve(false);
+            }
+            
+            // Check if the index.m3u8 file has been modified recently
+            const stats = fs.statSync(indexPath);
+            const fileModTime = stats.mtime;
+            const currentTime = new Date();
+            const diffSeconds = (currentTime - fileModTime) / 1000;
+            
+            // If the file hasn't been updated in the last 60 seconds, the stream is probably offline
+            // This value can be adjusted based on HLS segment duration in your setup
+            if (diffSeconds > 60) {
+                return resolve(false);
+            }
+            
+            // Optional: Check for recent segment files
+            try {
+                const segmentFiles = fs.readdirSync(sourceDir).filter(file => file.endsWith('.ts'));
+                if (segmentFiles.length === 0) {
+                    return resolve(false);
+                }
+                
+                // Get the most recent segment file
+                const mostRecentSegment = segmentFiles
+                    .map(file => ({
+                        name: file,
+                        time: fs.statSync(path.join(sourceDir, file)).mtime
+                    }))
+                    .sort((a, b) => b.time - a.time)[0];
+                
+                // If the most recent segment is too old, stream is likely inactive
+                if (mostRecentSegment) {
+                    const segmentAge = (currentTime - mostRecentSegment.time) / 1000;
+                    if (segmentAge > 20) {
+                        return resolve(false);
+                    }
+                }
+            } catch (err) {
+                console.error(`Error checking segment files: ${err}`);
+            }
+            
+            // If all checks pass, the stream appears to be active
+            return resolve(true);
+        } catch (error) {
+            console.error(`Error checking HLS activity for stream ${streamId}:`, error);
+            // If there's an error in our check, assume the stream is inactive to be safe
+            return resolve(false);
+        }
+    });
 }
 
 // Handle uncaught exceptions
