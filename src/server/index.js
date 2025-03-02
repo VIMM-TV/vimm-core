@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const mediaServer = require('./nms-instance');
 const streamsRoutes = require('../api/routes/streams');
+const authRoutes = require('../api/routes/auth');
 const chatRoutes = require('../api/routes/chat');
 const Logger = require('node-media-server/src/node_core_logger');
 const { validateStreamKey, getUserByStreamKey, getUserByStreamId, getStreamByHiveAccount, setStreamId } = require('../auth/streamkey');
@@ -203,6 +204,7 @@ async function startServer() {
         // API Routes
         app.use('/api/streams', streamsRoutes);
         app.use('/api/chat', chatRoutes);
+        app.use('/api/auth', authRoutes);
 
         // Error handling middleware
         app.use((err, req, res, next) => {
