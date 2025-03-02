@@ -4,29 +4,29 @@ const ChatConfig = require('../../db/models/chatConfig');
 const StreamKey = require('../../db/models/streamKey');
 
 /**
- * GET /api/chat/stream/:streamId
+ * GET /api/chat/stream/:hiveAccount
  * Returns chat settings for a specific stream
  */
-router.get('/stream/:streamId', async (req, res) => {
+router.get('/stream/:hiveAccount', async (req, res) => {
     try {
-        const { streamId } = req.params;
+        const { hiveAccount } = req.params;
         
         const chatConfig = await ChatConfig.findOne({
-            where: { streamID: streamId }
+            where: { hiveAccount: hiveAccount }
         });
 
         if (!chatConfig) {
             // If no config exists yet, return default values
             return res.status(404).json({
                 error: 'Chat configuration not found',
-                message: `No chat configuration for stream ID: ${streamId}`
+                message: `No chat configuration for stream ID: ${hiveAccount}`
             });
         }
 
         res.json(chatConfig);
 
     } catch (error) {
-        console.error(`Error fetching chat settings for stream ${req.params.streamId}:`, error);
+        console.error(`Error fetching chat settings for stream ${req.params.hiveAccount}:`, error);
         res.status(500).json({
             error: 'Internal server error',
             message: 'Failed to fetch chat settings'
@@ -35,31 +35,31 @@ router.get('/stream/:streamId', async (req, res) => {
 });
 
 /**
- * POST /api/chat/stream/:streamId
+ * POST /api/chat/stream/:hiveAccount
  * Create or update chat configuration for a stream
  */
-router.post('/stream/:streamId', async (req, res) => {
+router.post('/stream/:hiveAccount', async (req, res) => {
     try {
-        const { streamId } = req.params;
+        const { hiveAccount } = req.params;
         
         // First verify the stream exists
         const stream = await StreamKey.findOne({
-            where: { streamID: streamId }
+            where: { hiveAccount: hiveAccount }
         });
 
         if (!stream) {
             return res.status(404).json({
                 error: 'Stream not found',
-                message: `No stream found with ID: ${streamId}`
+                message: `No stream found with ID: ${hiveAccount}`
             });
         }
 
         // Find or create chat config
         let [chatConfig, created] = await ChatConfig.findOrCreate({
-            where: { streamID: streamId },
+            where: { hiveAccount: hiveAccount },
             defaults: {
                 ...req.body,
-                streamID: streamId
+                hiveAccount: hiveAccount
             }
         });
 
@@ -75,7 +75,7 @@ router.post('/stream/:streamId', async (req, res) => {
         });
 
     } catch (error) {
-        console.error(`Error updating chat config for stream ${req.params.streamId}:`, error);
+        console.error(`Error updating chat config for stream ${req.params.hiveAccount}:`, error);
         res.status(500).json({
             error: 'Internal server error',
             message: 'Failed to update chat configuration'
