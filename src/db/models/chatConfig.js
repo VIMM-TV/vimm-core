@@ -7,12 +7,22 @@ const ChatConfig = sequelize.define('ChatConfig', {
     primaryKey: true,
     autoIncrement: true
   },
-  // Foreign key to link to StreamKey
+  // Keep stream_id for reference, but not as a foreign key
   streamID: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true, // Change to true since it might not always have a value
     field: 'stream_id',
-    unique: true // Ensures one chat config per stream
+    unique: true
+  },
+  // Add hive_account field to use as foreign key
+  hiveAccount: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'hive_account',
+    references: {
+      model: 'stream_keys',
+      key: 'hive_account'
+    }
   },
   chatEnabled: {
     type: DataTypes.BOOLEAN,

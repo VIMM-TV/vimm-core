@@ -10,6 +10,7 @@ const StreamKey = sequelize.define('StreamKey', {
   hiveAccount: {
     type: DataTypes.STRING,
     allowNull: false,
+    unique: true,
     field: 'hive_account'
   },
   streamKey: {

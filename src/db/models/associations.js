@@ -3,14 +3,14 @@ const ChatConfig = require('./chatConfig');
 
 // Define associations
 StreamKey.hasOne(ChatConfig, {
-  foreignKey: 'stream_id',
-  sourceKey: 'streamID',
+  foreignKey: 'hive_account',
+  sourceKey: 'hiveAccount',
   as: 'chatConfig'
 });
 
 ChatConfig.belongsTo(StreamKey, {
-  foreignKey: 'stream_id',
-  targetKey: 'streamID'
+  foreignKey: 'hive_account',
+  targetKey: 'hiveAccount'
 });
 
 module.exports = {
