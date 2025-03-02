@@ -1,7 +1,7 @@
 const sequelize = require('./index');
 const StreamKey = require('./models/streamKey');
-const StreamKey = require('./models/chatConfig');
-const StreamKey = require('./models/associations');
+const ChatConfig = require('./models/chatConfig');
+const Associations = require('./models/associations');
 
 async function initDatabase() {
   try {
