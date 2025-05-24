@@ -17,12 +17,18 @@ const hivePostManager = new HivePostManager();
 const CustomTranscoder = require('./custom-transcoder');
 const transcoder = new CustomTranscoder();
 
+const initDatabase = require('../db/init');
+
 // Create Express application
 const app = express();
 const port = process.env.PORT || 3000;
 
 async function startServer() {
     try {
+        // Initialize database
+        console.log('Initializing database...');
+        await initDatabase();
+        
         // Initialize media server first
         const nms = await mediaServer.initialize();
         
