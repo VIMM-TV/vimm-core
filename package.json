@@ -21,7 +21,7 @@
     "morgan": "^1.10.0",
     "node-media-server": "^2.6.5",
     "sequelize": "^6.37.5",
-    "sqlite3": "^5.1.7"
+    "better-sqlite3": "^9.2.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

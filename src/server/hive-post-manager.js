@@ -1,5 +1,6 @@
 const { Client, PrivateKey } = require('@hiveio/dhive');
 const hiveConfig = require('../../config/hive');
+const config = require('config');
 
 class HivePostManager {
     constructor() {
@@ -166,7 +167,8 @@ class HivePostManager {
     }
 
     _generatePostBody({ status, startTime, endTime, title, description, language, username, streamId, duration }) {
-        const watchUrl = `http://${process.env.SERVER_IP || 'localhost'}:3000/player.html?user=${username}`;
+        const { protocol, domain, path } = config.get('watchUrl');
+        const watchUrl = `${protocol}://${domain}${path}?user=${username}`;
         
         let content = `# ${status === 'live' ? '🔴 Live Stream' : '⭕ Stream Ended'}\n\n`;
         
