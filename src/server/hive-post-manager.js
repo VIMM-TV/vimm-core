@@ -71,7 +71,7 @@ class HivePostManager {
                     {
                         author: hiveAccount,
                         permlink: permlink,
-                        max_accepted_payout: '0.000 HBD', // set to 0.000 HBD for no payout (testing)
+                        max_accepted_payout: '10000.000 HBD', // set to 0.000 HBD for no payout (testing)
                         percent_hbd: 10000,
                         allow_votes: true,
                         allow_curation_rewards: true,
