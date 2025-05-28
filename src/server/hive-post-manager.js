@@ -1,6 +1,6 @@
 const { Client, PrivateKey } = require('@hiveio/dhive');
 const hiveConfig = require('../../config/hive');
-const config = require('config');
+const config = require('../../config/default');
 
 class HivePostManager {
     constructor() {
