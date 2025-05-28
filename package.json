@@ -13,6 +13,7 @@
   "author": "chirenonhive",
   "license": "ISC",
   "dependencies": {
+    "sqlite3": "^5.1.6",
     "better-sqlite3": "^9.2.2",
     "@hiveio/dhive": "^1.3.2",
     "cors": "^2.8.5",
