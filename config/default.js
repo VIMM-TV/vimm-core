@@ -7,8 +7,8 @@ const config = {
     // If you're using vimm-frontend, it should be set to the frontend 'watch' URL.
     // If you're using vimm-core alone, it should point to player.html.
     watchUrl: {
-        protocol: 'http',
-        domain: 'vimm.webhop.me:3002',
+        protocol: 'https',
+        domain: 'vimm.webhop.me',
         path: '/watch'
     }
 };
