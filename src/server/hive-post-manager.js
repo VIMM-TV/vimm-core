@@ -167,7 +167,7 @@ class HivePostManager {
     }
 
     _generatePostBody({ status, startTime, endTime, title, description, language, username, streamId, duration }) {
-        const { protocol, domain, path } = config.get('watchUrl');
+        const { protocol, domain, path } = config.watchUrl;
         const watchUrl = `${protocol}://${domain}${path}?user=${username}`;
         
         let content = `# ${status === 'live' ? '🔴 Live Stream' : '⭕ Stream Ended'}\n\n`;
