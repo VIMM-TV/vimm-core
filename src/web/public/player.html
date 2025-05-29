@@ -319,7 +319,7 @@
                     return response.json();
                 })
                 .then(data => {
-                    return `http://${window.location.host}/live/${data.streamId}/master.m3u8`;
+                    return `https://${window.location.host}/live/${data.streamId}/master.m3u8`;
                 })
                 .catch(error => {
                     console.error('Error:', error);
