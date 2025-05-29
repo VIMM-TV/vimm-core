@@ -250,8 +250,8 @@ async function startServer() {
         }
 
         // Start both servers
-        httpServer.listen(httpPort, () => {
-            console.log(`HTTP server running on port ${httpPort}`);
+        httpServer.listen(port, () => {
+            console.log(`HTTP server running on port ${port}`);
         });
 
         httpsServer.listen(httpsPort, () => {
