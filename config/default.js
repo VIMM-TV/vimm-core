@@ -1,5 +1,5 @@
 const config = {
-    transcoding: true,
+    transcoding: false,
     // WatchURL: This is for the URL that will be included in the Hive posts for each stream.
     // It should point to the player page where the stream can be watched.
     // Example: 'https://yourdomain/watch'
