@@ -28,8 +28,8 @@ const httpsPort = 443;
 
 // SSL/TLS Configuration
 const sslOptions = {
-    key: fs.readFileSync(path.join(__dirname, '../myserver.key')),
-    cert: fs.readFileSync(path.join(__dirname, '../vimm_webhop_me.pem'))
+    key: fs.readFileSync(path.join(__dirname, '../../../myserver.key')),
+    cert: fs.readFileSync(path.join(__dirname, '../../../vimm_webhop_me.pem'))
 };
 
 async function startServer() {
