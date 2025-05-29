@@ -8,8 +8,8 @@ const config = {
     // If you're using vimm-core alone, it should point to player.html.
     watchUrl: {
         protocol: 'http',
-        domain: 'localhost:3000',
-        path: '/player.html'
+        domain: 'vimm.webhop.me:3002',
+        path: '/watch'
     }
 };
 
