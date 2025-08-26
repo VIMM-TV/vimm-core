@@ -1,5 +1,4 @@
 const express = require('express');
-const https = require('https');
 const http = require('http');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -24,13 +23,6 @@ const initDatabase = require('../db/init');
 // Create Express application
 const app = express();
 const port = process.env.PORT || 3000;
-const httpsPort = 443;
-
-// SSL/TLS Configuration
-const sslOptions = {
-    key: fs.readFileSync(path.join(__dirname, '../../../myserver.key')),
-    cert: fs.readFileSync(path.join(__dirname, '../../../vimm_webhop_me.pem'))
-};
 
 async function startServer() {
     try {
@@ -231,31 +223,11 @@ async function startServer() {
         });
 
         // Start Express server
-        // app.listen(port, () => {
-        //     Logger.log(`Express server running on port ${port}`);
-        //     Logger.log('Media server running on RTMP port 1935 and HTTP port 8000');
-        // });
         const httpServer = http.createServer(app);
-        const httpsServer = https.createServer(sslOptions, app);
 
-        // Redirect HTTP to HTTPS (optional)
-        if (process.env.NODE_ENV === 'production') {
-            app.use((req, res, next) => {
-                if (req.header('x-forwarded-proto') !== 'https') {
-                    res.redirect(`https://${req.header('host')}${req.url}`);
-                } else {
-                    next();
-                }
-            });
-        }
-
-        // Start both servers
+        // Start HTTP server
         httpServer.listen(port, () => {
             console.log(`HTTP server running on port ${port}`);
-        });
-
-        httpsServer.listen(httpsPort, () => {
-            console.log(`HTTPS server running on port ${httpsPort}`);
             console.log('Media server running on RTMP port 1935 and HTTP port 8000');
         });
         setupStreamCleanupJob();
