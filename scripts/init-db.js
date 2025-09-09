@@ -1,3 +1,4 @@
+require('dotenv').config();
 const initDatabase = require('../src/db/init');
 
 console.log('Initializing database...');
