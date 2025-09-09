@@ -1,17 +1,14 @@
 const { Sequelize } = require('sequelize');
-const path = require('path');
+const { getSequelizeConfig } = require('./config');
 
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: path.join(__dirname, '../../database.sqlite'),
-  logging: false // Set to console.log to see SQL queries
-});
+const config = getSequelizeConfig();
+const sequelize = new Sequelize(config);
 
 // Test the connection
 async function testConnection() {
   try {
     await sequelize.authenticate();
-    console.log('Database connection established successfully.');
+    console.log(`Database connection established successfully (${config.dialect}).`);
   } catch (error) {
     console.error('Unable to connect to the database:', error);
   }

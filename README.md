@@ -59,6 +59,47 @@ sudo apt install ffmpeg
 sudo apt install nvidia-cuda-toolkit
 ```
 
+## Configuration
+
+VIMM Core uses environment variables for configuration. Copy `.env.example` to `.env` and customize as needed:
+
+```bash
+cp .env.example .env
+```
+
+### Database Configuration
+
+VIMM Core supports multiple database backends:
+
+- **SQLite** (default) - No additional setup required
+- **MySQL** - Requires MySQL server
+- **PostgreSQL** - Requires PostgreSQL server
+
+Configure your database using these environment variables:
+
+```bash
+# Database type
+DB_DIALECT=sqlite  # sqlite, mysql, postgres
+
+# For SQLite (default)
+DB_STORAGE=database.sqlite
+
+# For MySQL/PostgreSQL
+DB_HOST=localhost
+DB_PORT=3306       # 3306 for MySQL, 5432 for PostgreSQL
+DB_NAME=vimm_core
+DB_USERNAME=root
+DB_PASSWORD=your_password
+```
+
+### Testing Database Configuration
+
+You can test your database configuration by running:
+
+```bash
+npm run init-db
+```
+
 ## Development Status
 This project is currently in active development. Our immediate priorities are:
 
