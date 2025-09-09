@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
             usernameInput.textContent = username;
 
             // Request stream key from server
-            const response = await fetch('/api/auth/stream-key', {
+            const response = await fetch('https://www.vimm.tv/api/auth/stream-key', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
