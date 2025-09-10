@@ -1,6 +1,7 @@
 const sequelize = require('./index');
 const StreamKey = require('./models/streamKey');
 const ChatConfig = require('./models/chatConfig');
+const FollowedChannels = require('./models/followedChannels');
 const Associations = require('./models/associations');
 
 async function initDatabase() {
