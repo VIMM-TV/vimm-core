@@ -73,6 +73,76 @@ This project is currently in active development. Our immediate priorities are:
 - Hive blockchain integration
 - Stream metadata management
 - Error handling and logging system
+- Hive Keychain authentication system
+- User channel following/unfollowing functionality
+- JWT-based session management
+- RESTful API for user and channel management
+
+## API Documentation
+
+### Authentication Endpoints
+
+#### Generate Challenge
+```
+GET /api/auth/challenge
+```
+Returns a challenge string for Hive authentication.
+
+#### Hive Authentication  
+```
+POST /api/auth/hive
+Content-Type: application/json
+
+{
+  "username": "hive_username",
+  "signature": "signature_from_keychain", 
+  "challenge": "challenge_string"
+}
+```
+Authenticates a user with Hive Keychain and returns a JWT token.
+
+### Channel Management Endpoints
+
+#### Follow Channel
+```
+POST /api/channels/follow
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+
+{
+  "channelUsername": "username_to_follow"
+}
+```
+
+#### Unfollow Channel
+```
+DELETE /api/channels/unfollow
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+
+{
+  "channelUsername": "username_to_unfollow"
+}
+```
+
+#### Get Followed Channels
+```
+GET /api/user/followed-channels?page=1&limit=20
+Authorization: Bearer <jwt_token>
+```
+Returns paginated list of channels the authenticated user follows.
+
+### Stream Endpoints
+
+#### Get Active Streams
+```
+GET /api/streams?page=1&limit=20&language=en&category=gaming
+```
+
+#### Get Stream Details
+```
+GET /api/streams/:streamId
+```
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
