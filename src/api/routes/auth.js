@@ -37,13 +37,36 @@ router.post('/stream-key', async (req, res) => {
 });
 
 /**
+ * GET /api/auth/challenge
+ * Generate a challenge for Hive authentication
+ */
+router.get('/challenge', (req, res) => {
+    try {
+        const challenge = generateChallenge();
+        
+        // Store challenge with timestamp
+        challenges.set(challenge, {
+            timestamp: Date.now()
+        });
+        
+        console.log(`Generated challenge: ${challenge}`); // Debug log
+        
+        res.json({ challenge });
+    } catch (error) {
+        console.error('Challenge generation error:', error);
+        res.status(500).json({ error: 'Failed to generate challenge' });
+    }
+});
+
+/**
  * POST /api/auth/hive
  * Hive Keychain authentication endpoint
- * Reuses vimm-chat logic for challenge generation and verification
  */
 router.post('/hive', async (req, res) => {
     try {
         const { username, signature, challenge } = req.body;
+        
+        console.log(`Authentication attempt - Username: ${username}, Challenge: ${challenge}`); // Debug log
         
         if (!username || !signature || !challenge) {
             return res.status(400).json({ 
@@ -54,10 +77,23 @@ router.post('/hive', async (req, res) => {
 
         // Verify the challenge exists and hasn't expired
         const challengeData = challenges.get(challenge);
+        console.log(`Challenge lookup result:`, challengeData); // Debug log
+        
         if (!challengeData) {
+            console.log(`Available challenges:`, Array.from(challenges.keys())); // Debug log
             return res.status(400).json({ 
                 error: 'Invalid challenge',
                 message: 'Challenge not found or expired' 
+            });
+        }
+
+        // Check if challenge is expired (5 minutes)
+        const now = Date.now();
+        if (now - challengeData.timestamp > 300000) {
+            challenges.delete(challenge);
+            return res.status(400).json({ 
+                error: 'Challenge expired',
+                message: 'Challenge has expired, please request a new one' 
             });
         }
 
@@ -78,6 +114,8 @@ router.post('/hive', async (req, res) => {
         try {
             // Generate JWT token for authenticated user
             const token = generateToken(username);
+            
+            console.log(`Authentication successful for user: ${username}`); // Debug log
             
             res.json({ 
                 success: true,
@@ -100,26 +138,6 @@ router.post('/hive', async (req, res) => {
             error: 'Authentication failed',
             message: 'Internal server error during authentication' 
         });
-    }
-});
-
-/**
- * GET /api/auth/challenge
- * Generate a challenge for Hive authentication
- */
-router.get('/challenge', (req, res) => {
-    try {
-        const challenge = generateChallenge();
-        
-        // Store challenge with timestamp
-        challenges.set(challenge, {
-            timestamp: Date.now()
-        });
-        
-        res.json({ challenge });
-    } catch (error) {
-        console.error('Challenge generation error:', error);
-        res.status(500).json({ error: 'Failed to generate challenge' });
     }
 });
 
