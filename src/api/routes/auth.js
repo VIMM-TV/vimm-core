@@ -141,4 +141,74 @@ router.post('/hive', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/auth/verify
+ * Verify authentication token
+ */
+router.post('/verify', (req, res) => {
+    try {
+        // Extract token from Authorization header
+        const authHeader = req.headers.authorization;
+        
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ 
+                error: 'Missing or invalid authorization header',
+                message: 'Token required for verification' 
+            });
+        }
+
+        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+        
+        if (!token) {
+            return res.status(401).json({ 
+                error: 'No token provided',
+                message: 'Authentication token is required' 
+            });
+        }
+
+        // Verify the JWT token
+        const jwt = require('jsonwebtoken');
+        const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'; // Use same secret as in generateToken
+        
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            console.log(`Token verification successful for user: ${decoded.username}`); // Debug log
+            
+            res.json({ 
+                success: true,
+                valid: true,
+                username: decoded.username,
+                message: 'Token is valid' 
+            });
+            
+        } catch (jwtError) {
+            console.log('Token verification failed:', jwtError.message); // Debug log
+            
+            if (jwtError.name === 'TokenExpiredError') {
+                return res.status(401).json({ 
+                    error: 'Token expired',
+                    message: 'Authentication token has expired' 
+                });
+            } else if (jwtError.name === 'JsonWebTokenError') {
+                return res.status(401).json({ 
+                    error: 'Invalid token',
+                    message: 'Authentication token is invalid' 
+                });
+            } else {
+                return res.status(401).json({ 
+                    error: 'Token verification failed',
+                    message: 'Unable to verify authentication token' 
+                });
+            }
+        }
+
+    } catch (error) {
+        console.error('Token verification error:', error);
+        res.status(500).json({ 
+            error: 'Verification failed',
+            message: 'Internal server error during token verification' 
+        });
+    }
+});
+
 module.exports = router;
