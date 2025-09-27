@@ -1,11 +1,28 @@
 const crypto = require('crypto');
+const { Op } = require('sequelize');
 const StreamKey = require('../db/models/streamKey');
 
 async function generateStreamKey(hiveAccount) {
-    // Generate a random stream key
+    // Generate a new random stream key
     const streamKey = crypto.randomBytes(32).toString('hex');
 
-    // Save to database
+    // Check if a stream key already exists for this hive account
+    const existingKey = await StreamKey.findOne({
+        where: {
+            hiveAccount,
+            isActive: true
+        }
+    });
+
+    // If a stream key already exists, update it with the new key
+    if (existingKey) {
+        await existingKey.update({
+            streamKey
+        });
+        return streamKey;
+    }
+
+    // Create a new record if none exists
     await StreamKey.create({
         hiveAccount,
         streamKey,
