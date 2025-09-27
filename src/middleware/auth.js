@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 // JWT secret - in production this should be from environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'vimm-core-default-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 function generateToken(hiveAccount) {
   return jwt.sign(
