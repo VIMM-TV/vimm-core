@@ -10,6 +10,15 @@ const config = {
         protocol: 'http',
         domain: 'vimm.webhop.me',
         path: '/watch'
+    },
+    // Thumbnail generation configuration
+    thumbnails: {
+        enabled: true,
+        maxResolution: '640x360', // Maximum resolution for thumbnails (format: WIDTHxHEIGHT)
+        quality: 2, // JPEG quality (1-31, lower is better quality)
+        interval: 5 * 60 * 1000, // Generation interval in milliseconds (5 minutes)
+        thumbnailDir: './media/thumbnails', // Directory to store thumbnails
+        keepCount: 5 // Number of historical thumbnails to keep per stream
     }
 };
 

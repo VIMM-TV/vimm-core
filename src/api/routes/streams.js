@@ -46,7 +46,7 @@ router.get('/', async (req, res) => {
             language: stream.streamLanguage,
             category: stream.streamCategory,
             startTime: stream.lastUsed,
-            thumbnail: `/thumbnails/${stream.streamID}.jpg`,
+            thumbnail: `/thumbnails/${stream.streamID}_current.jpg`,
             isLive: stream.isLive,
             streamPath: `/live/${stream.streamID}`
         }));
@@ -101,7 +101,7 @@ router.get('/:streamId', async (req, res) => {
             language: stream.streamLanguage,
             category: stream.streamCategory,
             startTime: stream.lastUsed,
-            thumbnail: `/thumbnails/${stream.streamID}.jpg`,
+            thumbnail: `/thumbnails/${stream.streamID}_current.jpg`,
             isLive: stream.isLive,
             streamPath: `/live/${stream.streamID}`
         };
@@ -147,6 +147,61 @@ router.get('/path/:identifier', async (req, res) => {
     } catch (error) {
         console.error('Error fetching stream:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * GET /api/streams/:streamId/thumbnail
+ * Returns the thumbnail for a specific stream with proper error handling
+ */
+router.get('/:streamId/thumbnail', async (req, res) => {
+    try {
+        const { streamId } = req.params;
+        const fs = require('fs');
+        const path = require('path');
+        
+        // Check if stream exists and is active
+        const stream = await StreamKey.findOne({
+            where: { 
+                streamID: streamId,
+                isLive: true
+            }
+        });
+
+        if (!stream) {
+            return res.status(404).json({
+                error: 'Stream not found',
+                message: `No active stream found with ID: ${streamId}`
+            });
+        }
+
+        // Check if thumbnail exists
+        const thumbnailPath = path.join(__dirname, '../../../media/thumbnails', `${streamId}_current.jpg`);
+        
+        if (!fs.existsSync(thumbnailPath)) {
+            return res.status(404).json({
+                error: 'Thumbnail not found',
+                message: `No thumbnail available for stream ${streamId}`,
+                thumbnailUrl: null
+            });
+        }
+
+        // Get thumbnail stats for metadata
+        const stats = fs.statSync(thumbnailPath);
+        
+        res.json({
+            streamId: streamId,
+            thumbnailUrl: `/thumbnails/${streamId}_current.jpg`,
+            lastGenerated: stats.mtime,
+            size: stats.size
+        });
+
+    } catch (error) {
+        console.error(`Error fetching thumbnail for stream ${req.params.streamId}:`, error);
+        res.status(500).json({
+            error: 'Internal server error',
+            message: 'Failed to fetch thumbnail information'
+        });
     }
 });
 

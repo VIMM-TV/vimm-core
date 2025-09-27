@@ -20,6 +20,8 @@ const HivePostManager = require('./hive-post-manager');
 const hivePostManager = new HivePostManager();
 const CustomTranscoder = require('./custom-transcoder');
 const transcoder = new CustomTranscoder();
+const ThumbnailGenerator = require('./thumbnail-generator');
+const config = require('../../config/default');
 
 const initDatabase = require('../db/init');
 
@@ -158,6 +160,11 @@ async function startServer() {
                 
                 execSync(`rm -rf ./media/live/${id}`);
                 await hivePostManager.updateStreamPost(id, 'offline');
+                
+                // Clean up thumbnails for offline stream
+                if (global.thumbnailGenerator) {
+                    global.thumbnailGenerator.cleanupOfflineStreamThumbnails([id]);
+                }
             } catch (error) {
                 console.error('Error in donePublish cleanup:', error);
             }
@@ -179,6 +186,11 @@ async function startServer() {
                     // Clean up files and update Hive post
                     execSync(`rm -rf ./media/live/${id}`);
                     await hivePostManager.updateStreamPost(id, 'offline');
+                    
+                    // Clean up thumbnails for offline stream
+                    if (global.thumbnailGenerator) {
+                        global.thumbnailGenerator.cleanupOfflineStreamThumbnails([id]);
+                    }
                 }
             } catch (error) {
                 console.error('Error handling disconnect cleanup:', error);
@@ -236,11 +248,55 @@ async function startServer() {
             console.log('Media server running on RTMP port 1935 and HTTP port 8000');
         });
         setupStreamCleanupJob();
+        setupThumbnailGeneration();
 
     } catch (error) {
         console.error('Failed to start server:', error);
         process.exit(1);
     }
+}
+
+function setupThumbnailGeneration() {
+    if (!config.thumbnails || !config.thumbnails.enabled) {
+        console.log('Thumbnail generation disabled in configuration');
+        return;
+    }
+
+    console.log('Setting up thumbnail generation...');
+    
+    // Initialize thumbnail generator with config
+    const thumbnailGenerator = new ThumbnailGenerator(config.thumbnails);
+    
+    // Function to get active streams for thumbnail generation
+    const getActiveStreams = async () => {
+        try {
+            const activeStreams = await StreamKey.findAll({
+                where: {
+                    isLive: true,
+                    streamID: {
+                        [Op.not]: null
+                    }
+                },
+                attributes: ['streamID', 'hiveAccount']
+            });
+            
+            return activeStreams.map(stream => ({
+                streamID: stream.streamID,
+                hiveAccount: stream.hiveAccount
+            }));
+        } catch (error) {
+            console.error('Error fetching active streams for thumbnails:', error);
+            return [];
+        }
+    };
+    
+    // Start the thumbnail generation scheduler
+    thumbnailGenerator.startScheduler(getActiveStreams);
+    
+    // Store reference for potential cleanup
+    global.thumbnailGenerator = thumbnailGenerator;
+    
+    console.log(`Thumbnail generation scheduled every ${config.thumbnails.interval / 1000} seconds`);
 }
 
 function setupStreamCleanupJob() {
@@ -308,6 +364,15 @@ function setupStreamCleanupJob() {
                         console.log(`Media files removed for stream ${id}`);
                     } catch (e) {
                         console.error(`Failed to clean up media files for ${id}:`, e);
+                    }
+                    
+                    // Clean up thumbnails for offline stream
+                    try {
+                        if (global.thumbnailGenerator) {
+                            global.thumbnailGenerator.cleanupOfflineStreamThumbnails([id]);
+                        }
+                    } catch (e) {
+                        console.error(`Failed to clean up thumbnails for ${id}:`, e);
                     }
                 }
             }
