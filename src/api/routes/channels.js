@@ -127,4 +127,141 @@ router.delete('/unfollow', authenticateToken, async (req, res) => {
     }
 });
 
+/**
+ * GET /api/channels/my-channel
+ * Get authenticated user's channel settings
+ */
+router.get('/my-channel', authenticateToken, async (req, res) => {
+    try {
+        const username = req.user.hiveAccount;
+        
+        // Find the user's stream key/channel
+        const channel = await StreamKey.findOne({
+            where: { hiveAccount: username }
+        });
+
+        if (!channel) {
+            return res.status(404).json({ 
+                error: 'Channel not found',
+                message: `No channel found for user @${username}. Please generate a stream key first.` 
+            });
+        }
+
+        // Return channel settings
+        res.json({
+            username: channel.hiveAccount,
+            title: channel.streamTitle || '',
+            description: channel.streamDescription || '',
+            language: channel.streamLanguage || '',
+            category: channel.streamCategory || '',
+            isLive: channel.isLive,
+            streamId: channel.streamID,
+            viewerCount: channel.viewerCount || 0,
+            streamStarted: channel.streamStarted,
+            lastUsed: channel.lastUsed
+        });
+
+    } catch (error) {
+        console.error('Error fetching user channel:', error);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            message: 'Failed to fetch channel settings' 
+        });
+    }
+});
+
+/**
+ * PUT /api/channels/my-channel
+ * Update authenticated user's channel settings
+ */
+router.put('/my-channel', authenticateToken, async (req, res) => {
+    try {
+        const username = req.user.hiveAccount;
+        const { title, description, language, category } = req.body;
+        
+        // Find the user's stream key/channel
+        const channel = await StreamKey.findOne({
+            where: { hiveAccount: username }
+        });
+
+        if (!channel) {
+            return res.status(404).json({ 
+                error: 'Channel not found',
+                message: `No channel found for user @${username}. Please generate a stream key first.` 
+            });
+        }
+
+        // Validate input data
+        const updateData = {};
+        
+        if (title !== undefined) {
+            if (typeof title !== 'string' || title.length > 255) {
+                return res.status(400).json({ 
+                    error: 'Invalid title',
+                    message: 'Title must be a string with maximum 255 characters' 
+                });
+            }
+            updateData.streamTitle = title.trim();
+        }
+
+        if (description !== undefined) {
+            if (typeof description !== 'string') {
+                return res.status(400).json({ 
+                    error: 'Invalid description',
+                    message: 'Description must be a string' 
+                });
+            }
+            updateData.streamDescription = description.trim();
+        }
+
+        if (language !== undefined) {
+            if (typeof language !== 'string' || language.length > 10) {
+                return res.status(400).json({ 
+                    error: 'Invalid language',
+                    message: 'Language must be a string with maximum 10 characters' 
+                });
+            }
+            updateData.streamLanguage = language.trim();
+        }
+
+        if (category !== undefined) {
+            if (typeof category !== 'string') {
+                return res.status(400).json({ 
+                    error: 'Invalid category',
+                    message: 'Category must be a string' 
+                });
+            }
+            updateData.streamCategory = category.trim();
+        }
+
+        // Update the channel
+        await channel.update(updateData);
+        await channel.reload();
+
+        res.json({
+            success: true,
+            message: 'Channel settings updated successfully',
+            channel: {
+                username: channel.hiveAccount,
+                title: channel.streamTitle || '',
+                description: channel.streamDescription || '',
+                language: channel.streamLanguage || '',
+                category: channel.streamCategory || '',
+                isLive: channel.isLive,
+                streamId: channel.streamID,
+                viewerCount: channel.viewerCount || 0,
+                streamStarted: channel.streamStarted,
+                lastUsed: channel.lastUsed
+            }
+        });
+
+    } catch (error) {
+        console.error('Error updating channel settings:', error);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            message: 'Failed to update channel settings' 
+        });
+    }
+});
+
 module.exports = router;
