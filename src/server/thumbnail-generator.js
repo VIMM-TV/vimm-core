@@ -65,12 +65,15 @@ class ThumbnailGenerator {
 
                 console.log(`Generating thumbnail for stream ${streamId} from segment: ${latestSegment}`);
 
+                // Parse the resolution to get width and height separately
+                const [width, height] = this.config.maxResolution.split('x');
+
                 // FFmpeg command to extract thumbnail
                 const ffmpegArgs = [
                     '-i', segmentPath,
                     '-ss', '1', // Skip first second to avoid black frames
                     '-vframes', '1', // Extract only one frame
-                    '-vf', `scale=${this.config.maxResolution}:force_original_aspect_ratio=decrease,pad=${this.config.maxResolution}:(ow-iw)/2:(oh-ih)/2`,
+                    '-vf', `scale=${this.config.maxResolution}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`,
                     '-q:v', this.config.quality.toString(), // Quality setting (1-31, lower is better)
                     '-y', // Overwrite existing files
                     thumbnailPath
