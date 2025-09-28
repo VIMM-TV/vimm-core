@@ -1,14 +1,63 @@
 const { Client, PrivateKey } = require('@hiveio/dhive');
 const hiveConfig = require('../../config/hive');
 const config = require('../../config/default');
+const ThumbnailGenerator = require('./thumbnail-generator');
+const path = require('path');
+const fs = require('fs');
 
 class HivePostManager {
     constructor() {
         this.client = new Client(['https://api.hive.blog', 'https://api.hivekings.com']);
         this.activePosts = new Map();
+        this.thumbnailGenerator = new ThumbnailGenerator(config.thumbnails);
         
         if (!process.env.HIVE_POSTING_KEY) {
             console.warn('WARNING: HIVE_POSTING_KEY environment variable not set');
+        }
+    }
+
+    /**
+     * Get the thumbnail URL for a stream
+     * @param {string} streamId - The stream ID
+     * @returns {string|null} - The full URL to the current thumbnail or null if not found
+     */
+    getThumbnailUrl(streamId) {
+        try {
+            const thumbnailPath = this.thumbnailGenerator.getCurrentThumbnailPath(streamId);
+            if (thumbnailPath) {
+                // Convert local path to URL
+                const { protocol, domain } = config.watchUrl;
+                const relativePath = path.relative('./media', thumbnailPath).replace(/\\/g, '/');
+                return `${protocol}://${domain}/${relativePath}`;
+            }
+        } catch (error) {
+            console.error(`Error getting thumbnail URL for stream ${streamId}:`, error);
+        }
+        return null;
+    }
+
+    /**
+     * Generate a thumbnail for a stream if it doesn't exist
+     * @param {string} streamId - The stream ID
+     * @param {string} hiveAccount - The Hive account name
+     * @returns {Promise<string|null>} - The thumbnail URL or null if generation failed
+     */
+    async ensureThumbnail(streamId, hiveAccount) {
+        try {
+            let thumbnailUrl = this.getThumbnailUrl(streamId);
+            
+            if (!thumbnailUrl) {
+                console.log(`No thumbnail found for stream ${streamId}, generating one...`);
+                const success = await this.thumbnailGenerator.generateThumbnail(streamId, hiveAccount);
+                if (success) {
+                    thumbnailUrl = this.getThumbnailUrl(streamId);
+                }
+            }
+            
+            return thumbnailUrl;
+        } catch (error) {
+            console.error(`Error ensuring thumbnail for stream ${streamId}:`, error);
+            return null;
         }
     }
 
@@ -23,6 +72,9 @@ class HivePostManager {
 
         const currentDate = new Date().toISOString();
         
+        // Get or generate thumbnail
+        const thumbnailUrl = await this.ensureThumbnail(streamId, hiveAccount);
+        
         // Create post content
         const title = `🔴 ${streamTitle || 'Live Stream Started'}`;
         const body = this._generatePostBody({
@@ -32,7 +84,8 @@ class HivePostManager {
             description: streamDescription,
             language: streamLanguage,
             username: hiveAccount,
-            streamId
+            streamId,
+            thumbnailUrl
         });
 
         try {
@@ -52,13 +105,14 @@ class HivePostManager {
                     json_metadata: JSON.stringify({
                         tags: hiveConfig.defaultTags,
                         app: 'vimm.tv',
-                        image: ['https://vimm.tv/logo.png'],  // Add your logo URL here
+                        image: thumbnailUrl ? [thumbnailUrl, 'https://vimm.tv/logo.png'] : ['https://vimm.tv/logo.png'],
                         format: 'markdown',
                         stream: {
                             id: streamId,
                             title: streamTitle,
                             language: streamLanguage,
-                            startTime: currentDate
+                            startTime: currentDate,
+                            thumbnail: thumbnailUrl
                         }
                     })
                 }
@@ -115,13 +169,17 @@ class HivePostManager {
         const endTime = new Date().toISOString();
         
         try {
+            // Get thumbnail for the stream end post
+            const thumbnailUrl = this.getThumbnailUrl(streamId);
+            
             const body = this._generatePostBody({
                 status,
                 startTime,
                 endTime,
                 username: author,
                 streamId,
-                duration: this._calculateDuration(startTime, endTime)
+                duration: this._calculateDuration(startTime, endTime),
+                thumbnailUrl
             });
 
             const postingKey = PrivateKey.fromString(process.env.HIVE_POSTING_KEY);
@@ -138,14 +196,15 @@ class HivePostManager {
                     json_metadata: JSON.stringify({
                         tags: hiveConfig.defaultTags,
                         app: 'vimm.tv',
-                        image: ['https://vimm.tv/logo.png'],
+                        image: thumbnailUrl ? [thumbnailUrl, 'https://vimm.tv/logo.png'] : ['https://vimm.tv/logo.png'],
                         format: 'markdown',
                         stream: {
                             id: streamId,
                             status: 'offline',
                             startTime: startTime,
                             endTime: endTime,
-                            duration: this._calculateDuration(startTime, endTime)
+                            duration: this._calculateDuration(startTime, endTime),
+                            thumbnail: thumbnailUrl
                         }
                     })
                 }
@@ -166,11 +225,16 @@ class HivePostManager {
         }
     }
 
-    _generatePostBody({ status, startTime, endTime, title, description, language, username, streamId, duration }) {
+    _generatePostBody({ status, startTime, endTime, title, description, language, username, streamId, duration, thumbnailUrl }) {
         const { protocol, domain, path } = config.watchUrl;
         const watchUrl = `${protocol}://${domain}${path}?user=${username}`;
         
         let content = `# ${status === 'live' ? '🔴 Live Stream' : '⭕ Stream Ended'}\n\n`;
+        
+        // Add thumbnail image if available
+        if (thumbnailUrl) {
+            content += `![Stream Thumbnail](${thumbnailUrl})\n\n`;
+        }
         
         if (status === 'live') {
             content += `### ${title || 'Live Stream'}\n\n`;
