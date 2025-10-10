@@ -309,6 +309,31 @@
 
         let isTheaterMode = false;
         let hls = null;
+        let accessToken = null; // Store the access token for key requests
+
+        /**
+         * Get access token for encrypted HLS playback
+         */
+        async function getAccessToken(streamId) {
+            try {
+                const response = await fetch(`/api/hls/token/${streamId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to get access token');
+                }
+                
+                const data = await response.json();
+                return data.token;
+            } catch (error) {
+                console.error('Error getting access token:', error);
+                return null;
+            }
+        }
 
         function getStreamPath(hiveAccount) {
             return fetch(`/api/streams/path/${hiveAccount}?type=hiveAccount`)
@@ -433,9 +458,29 @@
         // Initialize player
         if (username) {
             getStreamPath(username)
-                .then(streamUrl => {
+                .then(async streamUrl => {
+                    // Extract stream ID from URL for token generation
+                    const streamId = streamUrl.split('/').slice(-2, -1)[0];
+                    
+                    // Get access token for encrypted playback
+                    accessToken = await getAccessToken(streamId);
+                    if (!accessToken) {
+                        console.error('Failed to get access token');
+                        return;
+                    }
+                    
                     if (Hls.isSupported()) {
-                        hls = new Hls();
+                        // Configure HLS.js with custom loader for encrypted keys
+                        const hlsConfig = {
+                            xhrSetup: function(xhr, url) {
+                                // Add token to key requests
+                                if (url.includes('/api/hls/key/')) {
+                                    xhr.open('GET', url + '?token=' + accessToken, true);
+                                }
+                            }
+                        };
+                        
+                        hls = new Hls(hlsConfig);
                         hls.loadSource(streamUrl);
                         hls.attachMedia(video);
                         

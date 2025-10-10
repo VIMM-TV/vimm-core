@@ -2,6 +2,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const config = require('../../config/default');
+const hlsEncryption = require('./hls-encryption');
 
 class CustomTranscoder {
     constructor() {
@@ -34,6 +35,32 @@ class CustomTranscoder {
 
         fs.writeFileSync(masterPlaylistPath, masterContent);
         console.log(`Created master playlist at ${masterPlaylistPath}`);
+    }
+
+    /**
+     * Create keyinfo file for FFmpeg HLS encryption
+     * @param {string} streamId - The stream identifier
+     * @param {string} streamDir - The directory where stream files are stored
+     * @returns {string} - Path to the keyinfo file
+     */
+    createKeyInfoFile(streamId, streamDir) {
+        // Generate and save encryption key
+        const encryptionKey = hlsEncryption.generateStreamKey(streamId);
+        const keyFilePath = hlsEncryption.saveKeyToFile(streamId, streamDir);
+        
+        // Create keyinfo file for FFmpeg
+        // Format:
+        // Line 1: Key URI (will be in the playlist)
+        // Line 2: Path to key file
+        // Line 3: IV (optional, we'll use the segment sequence number)
+        const keyUri = `/api/hls/key/${streamId}`;
+        const keyInfoContent = `${keyUri}\n${keyFilePath}\n`;
+        
+        const keyInfoPath = path.join(streamDir, 'keyinfo');
+        fs.writeFileSync(keyInfoPath, keyInfoContent);
+        
+        console.log(`[HLS Encryption] Created keyinfo file at ${keyInfoPath}`);
+        return keyInfoPath;
     }
 
     startTranscoding(streamId, inputUrl) {
@@ -89,6 +116,9 @@ class CustomTranscoder {
       // Create master playlist
       this.createMasterPlaylist(streamId, profiles);
 
+      // Create keyinfo file for HLS encryption
+      const keyInfoPath = this.createKeyInfoFile(streamId, streamDir);
+
       // Build FFmpeg command
       const transcodedProfiles = profiles.filter(p => p.name !== 'source');
       const ffmpegArgs = [
@@ -99,7 +129,7 @@ class CustomTranscoder {
           '-y' // Overwrite output files
       ];
 
-      // Add source (passthrough) output first
+      // Add source (passthrough) output first with encryption
       ffmpegArgs.push(
           // Source quality (passthrough)
           '-c:v', 'copy',
@@ -108,6 +138,7 @@ class CustomTranscoder {
           '-hls_time', '2',
           '-hls_list_size', '8',
           '-hls_flags', 'delete_segments+independent_segments',
+          '-hls_key_info_file', keyInfoPath,
           '-hls_segment_filename', path.join(streamDir, 'source', 'segment_%d.ts'),
           path.join(streamDir, 'source', 'index.m3u8')
       );
@@ -135,6 +166,7 @@ class CustomTranscoder {
               '-hls_time', '4',
               '-hls_list_size', '15',
               '-hls_flags', 'delete_segments+independent_segments+append_list',
+              '-hls_key_info_file', keyInfoPath,
               '-hls_segment_filename', path.join(streamDir, profile.name, 'segment_%d.ts'),
               path.join(streamDir, profile.name, 'index.m3u8')
           );
@@ -170,6 +202,9 @@ class CustomTranscoder {
             this.activeStreams.delete(streamId);
             console.log(`Stopped transcoding for stream ${streamId}`);
         }
+        
+        // Clean up encryption resources
+        hlsEncryption.cleanupStream(streamId);
     }
 }
 

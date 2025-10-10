@@ -11,6 +11,7 @@ const authRoutes = require('../api/routes/auth');
 const chatRoutes = require('../api/routes/chat');
 const channelsRoutes = require('../api/routes/channels');
 const userRoutes = require('../api/routes/user');
+const hlsRoutes = require('../api/routes/hls');
 const Logger = require('node-media-server/src/node_core_logger');
 const { validateStreamKey, getUserByStreamKey, getUserByStreamId, getStreamByHiveAccount, setStreamId } = require('../auth/streamkey');
 const StreamKey = require('../db/models/streamKey');
@@ -21,6 +22,7 @@ const hivePostManager = new HivePostManager();
 const CustomTranscoder = require('./custom-transcoder');
 const transcoder = new CustomTranscoder();
 const ThumbnailGenerator = require('./thumbnail-generator');
+const hlsEncryption = require('./hls-encryption');
 const config = require('../../config/default');
 
 const initDatabase = require('../db/init');
@@ -229,6 +231,12 @@ async function startServer() {
         app.use('/api/auth', authRoutes);
         app.use('/api/channels', channelsRoutes);
         app.use('/api/user', userRoutes);
+        app.use('/api/hls', hlsRoutes);
+
+        // Periodic cleanup of expired HLS tokens (every 5 minutes)
+        setInterval(() => {
+            hlsEncryption.cleanupExpiredTokens();
+        }, 5 * 60 * 1000);
 
         // Error handling middleware
         app.use((err, req, res, next) => {
