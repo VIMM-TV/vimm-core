@@ -103,7 +103,8 @@ router.get('/:streamId', async (req, res) => {
             startTime: stream.lastUsed,
             thumbnail: `/thumbnails/${stream.streamID}_current.jpg`,
             isLive: stream.isLive,
-            streamPath: `/live/${stream.streamID}`
+            streamPath: `/live/${stream.streamID}`,
+            permlink: stream.permlink || null
         };
 
         res.json(streamData);
