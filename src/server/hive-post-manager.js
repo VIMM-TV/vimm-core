@@ -2,6 +2,7 @@ const { Client, PrivateKey } = require('@hiveio/dhive');
 const hiveConfig = require('../../config/hive');
 const config = require('../../config/default');
 const ThumbnailGenerator = require('./thumbnail-generator');
+const StreamKey = require('../db/models/streamKey');
 const path = require('path');
 const fs = require('fs');
 
@@ -148,6 +149,17 @@ class HivePostManager {
                 permlink,
                 startTime: currentDate
             });
+
+            // Update the database with the permlink
+            try {
+                await StreamKey.update(
+                    { permlink: permlink },
+                    { where: { hiveAccount: hiveAccount } }
+                );
+                console.log(`Updated permlink in database for ${hiveAccount}`);
+            } catch (dbError) {
+                console.error('Error updating permlink in database:', dbError);
+            }
 
             console.log(`Created Hive post for stream ${streamId}: @${hiveAccount}/${permlink}`);
             return { author: hiveAccount, permlink };

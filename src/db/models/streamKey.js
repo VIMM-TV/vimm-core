@@ -67,6 +67,11 @@ const StreamKey = sequelize.define('StreamKey', {
   streamCategory: {
     type: DataTypes.STRING,
     field: 'stream_category'
+  },
+  permlink: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'permlink'
   }
 }, {
   tableName: 'stream_keys',
