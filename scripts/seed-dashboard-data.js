@@ -21,6 +21,17 @@ async function seedDashboardData() {
   try {
     console.log('Starting dashboard data seeding...\n');
 
+    // Ensure database connection
+    await sequelize.authenticate();
+    console.log('Database connection established successfully.\n');
+
+    // Create tables if they don't exist
+    console.log('Ensuring tables exist...');
+    await StreamStats.sync({ alter: true });
+    await FollowerGrowth.sync({ alter: true });
+    await BannedUsers.sync({ alter: true });
+    console.log('✓ Tables verified/created\n');
+
     // Get first active channel for testing
     const testChannel = await StreamKey.findOne({
       where: { isActive: true }
