@@ -61,8 +61,8 @@ async function seedDashboardData() {
 
     // 2. Seed FollowerGrowth (last 30 days)
     console.log('2. Seeding FollowerGrowth (30 days)...');
-    const followerGrowthData = [];
     let baseFollowers = 100;
+    let growthRecordsCreated = 0;
     
     for (let i = 29; i >= 0; i--) {
       const date = new Date();
@@ -73,17 +73,29 @@ async function seedDashboardData() {
       const growth = Math.floor(Math.random() * 5) + 1; // 1-5 new followers per day
       baseFollowers += growth;
       
-      followerGrowthData.push({
-        hiveAccount: username,
-        date: dateStr,
-        followerCount: baseFollowers
-      });
+      try {
+        // Use findOrCreate to avoid unique constraint issues
+        const [record, created] = await FollowerGrowth.findOrCreate({
+          where: {
+            hiveAccount: username,
+            date: dateStr
+          },
+          defaults: {
+            followerCount: baseFollowers
+          }
+        });
+        
+        // If record already exists, update it
+        if (!created) {
+          await record.update({ followerCount: baseFollowers });
+        }
+        growthRecordsCreated++;
+      } catch (error) {
+        console.error(`  Error creating growth record for ${dateStr}:`, error.message);
+      }
     }
-
-    await FollowerGrowth.bulkCreate(followerGrowthData, {
-      updateOnDuplicate: ['followerCount']
-    });
-    console.log(`✓ Created 30 days of follower growth data`);
+    
+    console.log(`✓ Created ${growthRecordsCreated} days of follower growth data`);
     console.log(`  Starting followers: 100`);
     console.log(`  Current followers: ${baseFollowers}\n`);
 
