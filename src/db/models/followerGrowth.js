@@ -10,11 +10,7 @@ const FollowerGrowth = sequelize.define('FollowerGrowth', {
   hiveAccount: {
     type: DataTypes.STRING,
     allowNull: false,
-    field: 'hive_account',
-    references: {
-      model: 'stream_keys',
-      key: 'hive_account'
-    }
+    field: 'hive_account'
   },
   date: {
     type: DataTypes.DATEONLY,
@@ -34,6 +30,7 @@ const FollowerGrowth = sequelize.define('FollowerGrowth', {
   indexes: [
     {
       unique: true,
+      name: 'follower_growth_unique_hive_account_date',
       fields: ['hive_account', 'date']
     }
   ]
