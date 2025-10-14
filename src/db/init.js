@@ -9,8 +9,10 @@ const Associations = require('./models/associations');
 
 async function initDatabase() {
   try {
-    // This will create tables if they don't exist and add missing columns
-    await sequelize.sync({ alter: true });
+    // This will create tables if they don't exist
+    // Note: Using { alter: false } to avoid SQLite ALTER TABLE issues
+    // New tables will be created, but existing tables won't be modified
+    await sequelize.sync({ alter: false });
     console.log('Database synchronized successfully');
   } catch (error) {
     console.error('Error syncing database:', error);

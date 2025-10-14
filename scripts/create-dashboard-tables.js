@@ -25,17 +25,17 @@ async function createDashboardTables() {
 
     // Create StreamStats table
     console.log('Creating stream_stats table...');
-    await StreamStats.sync({ alter: true });
+    await StreamStats.sync({ force: false });
     console.log('✓ stream_stats table created/updated');
 
     // Create FollowerGrowth table
     console.log('Creating follower_growth table...');
-    await FollowerGrowth.sync({ alter: true });
+    await FollowerGrowth.sync({ force: false });
     console.log('✓ follower_growth table created/updated');
 
     // Create BannedUsers table
     console.log('Creating banned_users table...');
-    await BannedUsers.sync({ alter: true });
+    await BannedUsers.sync({ force: false });
     console.log('✓ banned_users table created/updated');
 
     console.log('\n' + '='.repeat(60));

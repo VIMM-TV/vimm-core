@@ -27,9 +27,9 @@ async function seedDashboardData() {
 
     // Create tables if they don't exist
     console.log('Ensuring tables exist...');
-    await StreamStats.sync({ alter: true });
-    await FollowerGrowth.sync({ alter: true });
-    await BannedUsers.sync({ alter: true });
+    await StreamStats.sync({ force: false });
+    await FollowerGrowth.sync({ force: false });
+    await BannedUsers.sync({ force: false });
     console.log('✓ Tables verified/created\n');
 
     // Get first active channel for testing
