@@ -52,7 +52,8 @@ router.get('/', async (req, res) => {
             startTime: stream.lastUsed,
             thumbnail: `/thumbnails/${stream.streamID}_current.jpg`,
             isLive: stream.isLive,
-            streamPath: `/live/${stream.streamID}`
+            streamPath: `/live/${stream.streamID}`,
+            viewerCount: stream.viewerCount || 0
         }));
 
         // Return paginated results

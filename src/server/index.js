@@ -24,6 +24,8 @@ const transcoder = new CustomTranscoder();
 const ThumbnailGenerator = require('./thumbnail-generator');
 const hlsEncryption = require('./hls-encryption');
 const config = require('../../config/default');
+const viewerTracker = require('./viewer-tracker');
+const { trackViewerActivity } = require('../middleware/viewer-tracking');
 
 const initDatabase = require('../db/init');
 
@@ -49,7 +51,9 @@ async function startServer() {
 
         // Serve static files (like thumbnails)
         app.use('/thumbnails', express.static(path.join(__dirname, '../../media/thumbnails')));
-        app.use('/live', express.static(path.join(__dirname, '../../media/live')));
+        
+        // Apply viewer tracking middleware to HLS content routes
+        app.use('/live', trackViewerActivity, express.static(path.join(__dirname, '../../media/live')));
 
         // Health check endpoint
         app.get('/health', (req, res) => {
@@ -135,6 +139,9 @@ async function startServer() {
             Logger.log('[NodeEvent on donePublish]', `id=${id} StreamPath=${StreamPath}`);
             transcoder.stopTranscoding(id);
             
+            // Clear viewer tracking for this stream
+            viewerTracker.clearStream(id);
+            
             try {
                 // Find the user by stream ID and update the record
                 const user = await getUserByStreamId(id);
@@ -174,6 +181,9 @@ async function startServer() {
 
         nms.on('doneConnect', async (id, args) => {
             Logger.log('[NodeEvent on doneConnect]', `id=${id} args=${JSON.stringify(args)}`);
+            
+            // Clear viewer tracking for this stream
+            viewerTracker.clearStream(id);
             
             try {
                 // Check for any streams that were associated with this connection

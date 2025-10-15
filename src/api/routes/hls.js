@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const hlsEncryption = require('../../server/hls-encryption');
 const StreamKey = require('../../db/models/streamKey');
+const viewerTracker = require('../../server/viewer-tracker');
 
 /**
  * POST /api/hls/token/:streamId
@@ -30,6 +31,9 @@ router.post('/token/:streamId', async (req, res) => {
         const viewerIp = req.headers['x-forwarded-for'] 
             ? req.headers['x-forwarded-for'].split(',')[0].trim()
             : req.connection.remoteAddress;
+
+        // Record viewer activity for tracking
+        viewerTracker.recordActivity(streamId, viewerIp);
 
         // Generate an access token
         const token = hlsEncryption.generateAccessToken(streamId, viewerIp);
@@ -79,6 +83,9 @@ router.get('/key/:streamId', async (req, res) => {
                 message: 'Invalid or expired access token'
             });
         }
+
+        // Record viewer activity for tracking
+        viewerTracker.recordActivity(streamId, viewerIp);
 
         // Refresh the token (extend its expiry)
         hlsEncryption.refreshAccessToken(token);
